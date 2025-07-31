@@ -204,9 +204,10 @@
         }
 
         #preset-area {
-            display: flex;
             align-items: center;
-            gap: 8px;
+            justify-content: center;
+            width: 100%;
+            margin-top: 12px;
         }
         #preset-row { border: 2px dashed var(--border-color); }
 
@@ -260,6 +261,7 @@
         @media (max-width: 500px) {
             .controls {
                 justify-content: space-around;
+                width: 100%;
             }
             
             #timer-display,
@@ -268,12 +270,7 @@
                 order: 1;
             }
 
-            #preset-area {
-                order: 2;
-                width: 100%;
-                justify-content: center;
-                padding: 8px 0;
-            }
+            /* Preset Area is now outside, media query for it is not needed here */
 
             #preset-toggle-btn,
             #settings-btn {
@@ -327,11 +324,6 @@
                     <button id="check-button" class="control-btn" disabled title="Tipp ellenőrzése (Enter)">
                         <svg viewBox="0 0 24 24"><path d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71L9,20.42Z" /></svg>
                     </button>
-                    
-                    <div id="preset-area" style="display: none;">
-                        <div id="preset-row" class="guess-row"></div>
-                    </div>
-
                     <button id="preset-toggle-btn" class="control-btn" title="Minta sor be/ki">
                         <svg viewBox="0 0 24 24"><path d="M16,12V4H17V2H7V4H8V12L6,14V16H11.2V22H12.8V16H18V14L16,12Z" /></svg>
                     </button>
@@ -339,6 +331,9 @@
                         <svg viewBox="0 0 24 24"><path d="M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8M12,10A2,2 0 0,0 10,12A2,2 0 0,0 12,14A2,2 0 0,0 14,12A2,2 0 0,0 12,10M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12C22,6.5 17.5,2 12,2M19.1,4.9C19.1,4.9 19.1,4.9 19.1,4.9L20,6L18.6,6.9C19.3,8.1 19.8,9.5 19.9,11H22V13H19.9C19.8,14.5 19.3,15.9 18.6,17.1L20,18L19.1,19.1L17.7,17.7C16.5,18.5 15.1,19 13.5,19.1V21H10.5V19.1C8.9,19 7.5,18.5 6.3,17.7L4.9,19.1L4,18L5.4,17.1C4.7,15.9 4.2,14.5 4.1,13H2V11H4.1C4.2,9.5 4.7,8.1 5.4,6.9L4,6L4.9,4.9L6.3,6.3C7.5,5.5 8.9,5 10.5,4.9V3H13.5V4.9C15.1,5 16.5,5.5 17.7,6.3L19.1,4.9Z"></path></svg>
                     </button>
                 </div>
+            </div>
+            <div id="preset-area" style="display: none;">
+                <div id="preset-row" class="guess-row"></div>
             </div>
         </div>
     </div>
@@ -676,7 +671,6 @@
 
             undoButton.addEventListener('click', handleUndo);
             
-            // Hosszú nyomás eseménykezelők a Visszavonás gombra
             const cancelUndoHold = () => {
                 if (undoHoldTimer) {
                     clearTimeout(undoHoldTimer);
@@ -684,24 +678,21 @@
                 }
             };
             
-            const startUndoHold = () => {
+            const startUndoHold = (e) => {
+                if(e.type === 'touchstart') e.preventDefault();
                 if (undoButton.disabled || isGameOver) return;
                 undoHoldTimer = setTimeout(() => {
+                    undoHoldTimer = null;
                     if (confirm('Biztosan újra szeretnéd kezdeni a játékot?')) {
                         newGame();
                     }
-                    undoHoldTimer = null;
-                }, 800); // 800ms a hosszú nyomás
+                }, 800);
             };
 
             undoButton.addEventListener('mousedown', startUndoHold);
             undoButton.addEventListener('mouseup', cancelUndoHold);
             undoButton.addEventListener('mouseleave', cancelUndoHold);
-            
-            undoButton.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                startUndoHold();
-            });
+            undoButton.addEventListener('touchstart', startUndoHold);
             undoButton.addEventListener('touchend', cancelUndoHold);
 
 
