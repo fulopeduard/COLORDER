@@ -209,7 +209,14 @@
             width: 100%;
             margin-top: 12px;
         }
-        #preset-row { border: 2px dashed var(--border-color); }
+        #preset-row { 
+            border: 2px dashed var(--border-color); 
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        #preset-row.preset-autofill {
+            border-color: #ffd700;
+            box-shadow: 0 0 10px #ffd700, inset 0 0 5px rgba(255, 215, 0, 0.3);
+        }
 
         #timer-display {
             display: flex;
@@ -322,7 +329,7 @@
                     <button id="check-button" class="control-btn" disabled title="Tipp ellenőrzése (Enter)">
                         <svg viewBox="0 0 24 24"><path d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71L9,20.42Z" /></svg>
                     </button>
-                    <button id="preset-toggle-btn" class="control-btn" title="Minta sor be/ki">
+                    <button id="preset-toggle-btn" class="control-btn" title="Minta sor (rövid), Automatikus kitöltés (hosszú)">
                         <svg viewBox="0 0 24 24"><path d="M16,12V4H17V2H7V4H8V12L6,14V16H11.2V22H12.8V16H18V14L16,12Z" /></svg>
                     </button>
                     <button id="settings-btn" class="control-btn" title="Beállítások">
@@ -413,8 +420,12 @@
             let secretCode = [], currentAttempt = 0, currentGuess = [], selectedHoleIndex = null;
             let actionHistory = [], isChecking = false, isGameOver = false;
             let effectsEnabled = true, effectInterval = null, highlightedColor = null;
-            let isPresetEnabled = false;
+            
+            let isPresetVisible = false;
+            let isPresetAutofill = false;
+            let presetHoldTimer = null;
             let presetGuess = Array(CODE_LENGTH).fill(null);
+            
             let timerInterval = null, elapsedTime = 0;
             let undoHoldTimer = null;
 
@@ -560,7 +571,20 @@
             function selectHole(e){isGameOver||(deselectAllHoles(),selectedHoleIndex=e,document.querySelector(".guess-row.active")?.querySelector(`.hole[data-hole-index='${e}']`)?.classList.add("selected-hole"),updateButtonStates())}
             function deselectAllHoles(){document.querySelectorAll(".hole.selected-hole").forEach((e=>e.classList.remove("selected-hole"))),selectedHoleIndex=null}
             function selectNextAvailableHole(){const e=currentGuess.indexOf(null);-1!==e?selectHole(e):(deselectAllHoles(),updateButtonStates())}
-            function updateActiveRow() { document.querySelectorAll(".guess-row.active").forEach(row => row.classList.remove('active')); const activeRow = document.querySelector(`.guess-row[data-row='${currentAttempt}']`); if (activeRow) { activeRow.classList.add("active"); if (isPresetEnabled) { currentGuess = [...presetGuess]; updateGuessDisplay(); } selectNextAvailableHole(); } }
+            
+            function updateActiveRow() { 
+                document.querySelectorAll(".guess-row.active").forEach(row => row.classList.remove('active')); 
+                const activeRow = document.querySelector(`.guess-row[data-row='${currentAttempt}']`); 
+                if (activeRow) { 
+                    activeRow.classList.add("active"); 
+                    if (isPresetVisible && isPresetAutofill) {
+                        currentGuess = [...presetGuess]; 
+                        updateGuessDisplay(); 
+                    } 
+                    selectNextAvailableHole(); 
+                } 
+            }
+
             function runEffects() { if (!effectsEnabled || isGameOver) return; const placedMarbles = document.querySelectorAll('.marble'); if (placedMarbles.length === 0) return; const uniqueColorsOnBoard = [...new Set(Array.from(placedMarbles).map(m => m.dataset.color))]; if (uniqueColorsOnBoard.length === 0) return; const colorToAnimate = uniqueColorsOnBoard[Math.floor(Math.random() * uniqueColorsOnBoard.length)]; const marblesToAnimate = Array.from(document.querySelectorAll(`.marble[data-color="${colorToAnimate}"]`)).sort((a,b)=>parseInt(a.closest(".guess-row").dataset.row)-parseInt(b.closest(".guess-row").dataset.row)); const effectClass = Math.random() < 0.5 ? 'shimmer-effect' : 'pulse-effect'; const animationDuration = effectClass === 'shimmer-effect' ? 1000 : 700; marblesToAnimate.forEach((marble, i) => { setTimeout(() => { marble.classList.add(effectClass); setTimeout(() => { marble.classList.remove(effectClass); }, animationDuration); }, i * 150); }); }
             function toggleEffects() { effectsEnabled = !effectsEnabled; effectsToggleButton.classList.toggle('active', effectsEnabled); localStorage.setItem('szinozonEffects', effectsEnabled ? 'on' : 'off'); if (effectsEnabled) { if (effectInterval) clearInterval(effectInterval); effectInterval = setInterval(runEffects, 12000); } else { if (effectInterval) clearInterval(effectInterval); } }
             function clearColorHighlight() { document.querySelectorAll('.marble.highlighted').forEach(m => m.classList.remove('highlighted')); highlightedColor = null; }
@@ -571,9 +595,20 @@
                 localStorage.setItem('szinozonTheme', document.body.classList.contains('light-theme') ? 'light' : 'dark');
             }
 
+            // --- Minta sor funkciók ---
             function createPresetRow() { for (let i = 0; i < CODE_LENGTH; i++) { const hole = document.createElement('div'); hole.className = 'hole'; hole.dataset.holeIndex = i; presetRow.appendChild(hole); } }
             function updatePresetDisplay() { const holes = presetRow.querySelectorAll('.hole'); holes.forEach((hole, index) => { hole.innerHTML = ''; const color = presetGuess[index]; if (color) { const marble = document.createElement('div'); marble.className = 'marble'; marble.style.background = COLORS[color]; hole.appendChild(marble); } }); }
-            function togglePresetFeature() { isPresetEnabled = !isPresetEnabled; presetToggleButton.classList.toggle('active', isPresetEnabled); presetArea.style.display = isPresetEnabled ? 'flex' : 'none'; localStorage.setItem('szinozonPreset', isPresetEnabled ? 'on' : 'off'); }
+            
+            function updatePresetVisibilityUI() {
+                presetArea.style.display = isPresetVisible ? 'flex' : 'none';
+                presetToggleButton.classList.toggle('active', isPresetVisible);
+                localStorage.setItem('szinozonPresetVisible', isPresetVisible);
+            }
+
+            function updatePresetAutofillUI() {
+                presetRow.classList.toggle('preset-autofill', isPresetAutofill);
+                localStorage.setItem('szinozonPresetAutofill', isPresetAutofill);
+            }
 
             // --- INICIALIZÁLÁS ---
             
@@ -586,10 +621,10 @@
             effectsToggleButton.classList.toggle('active', effectsEnabled); 
             if (effectsEnabled) { effectInterval = setInterval(runEffects, 12000); }
             
-            const savedPreset = localStorage.getItem('szinozonPreset'); 
-            isPresetEnabled = savedPreset === 'on'; 
-            presetToggleButton.classList.toggle('active', isPresetEnabled); 
-            presetArea.style.display = isPresetEnabled ? 'flex' : 'none';
+            isPresetVisible = localStorage.getItem('szinozonPresetVisible') === 'true';
+            isPresetAutofill = localStorage.getItem('szinozonPresetAutofill') === 'true';
+            updatePresetVisibilityUI();
+            updatePresetAutofillUI();
             
             // --- ESEMÉNYKEZELŐK ---
 
@@ -666,11 +701,10 @@
                 langHuBtn.classList.remove('active');
             });
 
-            // --- Visszavonás gomb eseménykezelői (rövid és hosszú lenyomásra) ---
+            // Visszavonás gomb (rövid/hosszú nyomás)
             const startUndoHold = (e) => {
                 if (e.type === 'touchstart') e.preventDefault();
                 if (undoButton.disabled || isGameOver) return;
-                
                 undoHoldTimer = setTimeout(() => {
                     if (confirm('Biztosan újra szeretnéd kezdeni a játékot?')) {
                         newGame();
@@ -678,73 +712,44 @@
                     undoHoldTimer = null;
                 }, 800);
             };
-
-            const endUndoHold = () => {
-                if (undoHoldTimer) {
-                    clearTimeout(undoHoldTimer);
-                    undoHoldTimer = null;
-                    handleUndo();
-                }
-            };
-            
-            const cancelUndoHold = () => {
-                 if (undoHoldTimer) {
-                    clearTimeout(undoHoldTimer);
-                    undoHoldTimer = null;
-                }
-            }
-
+            const endUndoHold = () => { if (undoHoldTimer) { clearTimeout(undoHoldTimer); undoHoldTimer = null; handleUndo(); } };
+            const cancelUndoHold = () => { if (undoHoldTimer) { clearTimeout(undoHoldTimer); undoHoldTimer = null; } }
             undoButton.addEventListener('mousedown', startUndoHold);
             undoButton.addEventListener('mouseup', endUndoHold);
             undoButton.addEventListener('mouseleave', cancelUndoHold);
             undoButton.addEventListener('touchstart', startUndoHold, { passive: false });
             undoButton.addEventListener('touchend', endUndoHold);
 
+            // Minta sor gomb (rövid/hosszú nyomás)
+            const handlePresetShortPress = () => { isPresetVisible = !isPresetVisible; updatePresetVisibilityUI(); };
+            const handlePresetLongPress = () => { if(isPresetVisible) { isPresetAutofill = !isPresetAutofill; updatePresetAutofillUI(); }};
+            const startPresetHold = (e) => { if (e.type === 'touchstart') e.preventDefault(); presetHoldTimer = setTimeout(() => { presetHoldTimer = null; handlePresetLongPress(); }, 600); };
+            const endPresetHold = () => { if (presetHoldTimer) { clearTimeout(presetHoldTimer); presetHoldTimer = null; handlePresetShortPress(); } };
+            const cancelPresetHold = () => { if (presetHoldTimer) { clearTimeout(presetHoldTimer); presetHoldTimer = null; } };
+            presetToggleButton.addEventListener('mousedown', startPresetHold);
+            presetToggleButton.addEventListener('mouseup', endPresetHold);
+            presetToggleButton.addEventListener('mouseleave', cancelPresetHold);
+            presetToggleButton.addEventListener('touchstart', startPresetHold, { passive: false });
+            presetToggleButton.addEventListener('touchend', endPresetHold);
 
             checkButton.addEventListener('click', handleCheck);
             newGameButton.addEventListener('click', newGame);
             themeToggleButton.addEventListener('click', toggleTheme);
-            
-            effectsToggleButton.addEventListener('touchend', (e) => {
-                e.preventDefault();
-                toggleEffects();
-            });
             effectsToggleButton.addEventListener('click', toggleEffects);
-
-            presetToggleButton.addEventListener('click', togglePresetFeature);
 
             document.addEventListener('keydown', e => {
                 if(infoModal.classList.contains('visible') || leaderboardModal.classList.contains('visible')) return;
-
                 if (isGameOver || isChecking) return;
-
-                if (e.key === 'Backspace') {
-                    e.preventDefault();
-                    if (!undoButton.disabled) {
-                        handleUndo();
-                    }
-                    return;
-                }
-                
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    if (!checkButton.disabled) {
-                        handleCheck();
-                    }
-                    return;
-                }
-                
+                if (e.key === 'Backspace') { e.preventDefault(); if (!undoButton.disabled) handleUndo(); return; }
+                if (e.key === 'Enter') { e.preventDefault(); if (!checkButton.disabled) handleCheck(); return; }
                 const keyNumber = parseInt(e.key, 10);
                 if (keyNumber >= 1 && keyNumber <= COLOR_NAMES.length) {
                     const paletteColors = colorPalette.querySelectorAll('.palette-color');
                     const colorEl = paletteColors[keyNumber - 1];
                     if (colorEl) {
                         colorEl.classList.add('key-feedback-anim');
-                        setTimeout(() => {
-                            colorEl.classList.remove('key-feedback-anim');
-                        }, 300);
+                        setTimeout(() => colorEl.classList.remove('key-feedback-anim'), 300);
                     }
-
                     if (selectedHoleIndex !== null) {
                         const colorName = COLOR_NAMES[keyNumber - 1];
                         placeColor(selectedHoleIndex, colorName);
