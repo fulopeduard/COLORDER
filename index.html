@@ -77,13 +77,22 @@
         .guess-row { display: flex; align-items: center; gap: 8px; padding: 4px; border-radius: 50px; transition: background-color var(--anim-fast), box-shadow var(--anim-fast); }
         .guess-row.active { background-color: rgba(0,0,0,0.1); box-shadow: 0 0 15px rgba(52, 152, 219, 0.3); }
 
-        .gray-feedback-display, .feedback-pegs, .hole {
+        .row-number-display {
+            width: 25px;
+            text-align: center;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-color);
+            opacity: 0.4;
+            flex-shrink: 0;
+        }
+
+        .feedback-pegs, .hole {
             width: 40px; height: 40px; background-color: var(--hole-color);
             border-radius: 8px; display: flex; justify-content: center; align-items: center;
             box-shadow: inset 0 2px 4px var(--inset-shadow-color);
             transition: all var(--anim-fast);
         }
-        .gray-feedback-display { font-size: 22px; font-weight: 600; color: #7f8c8d; }
         .feedback-pegs { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 4px; padding: 5px; }
         .hole { border: 2px solid var(--border-color); border-radius: 50%; cursor: pointer; position: relative; overflow: hidden; }
         
@@ -134,7 +143,6 @@
             user-select: none; -webkit-user-select: none;
         }
 
-        /* ÚJ: Animáció a billentyű lenomására */
         @keyframes key-press-flash {
             from { box-shadow: 0 0 10px 4px var(--accent-color), 0 2px 4px var(--shadow-color); transform: scale(1.15); }
             to { box-shadow: 0 2px 4px var(--shadow-color); transform: scale(1); }
@@ -154,7 +162,18 @@
         #preset-area h4 { margin: 0; font-weight: 400; opacity: 0.8; }
         #preset-row { border: 2px dashed var(--border-color); }
 
-        #timer-display { display: flex; align-items: center; font-size: 1.2rem; font-weight: 600; background: var(--hole-color); padding: 5px 15px; border-radius: 20px; box-shadow: inset 0 2px 4px var(--inset-shadow-color); }
+        #timer-display {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 120px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            background: var(--hole-color);
+            padding: 5px 15px;
+            border-radius: 20px;
+            box-shadow: inset 0 2px 4px var(--inset-shadow-color);
+        }
         #timer-display svg { width: 20px; height: 20px; margin-right: 8px; opacity: 0.7; }
 
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(44, 62, 80, 0.85); backdrop-filter: blur(5px); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
@@ -168,6 +187,13 @@
         #leaderboard-table th, #leaderboard-table td { padding: 8px; text-align: center; border-bottom: 1px solid var(--border-color); }
         #leaderboard-table th { font-weight: 600; }
         #leaderboard-table tr:last-child td { border-bottom: none; }
+        
+        .lang-selector { margin-bottom: 20px; display: flex; justify-content: center; gap: 10px; }
+        .lang-btn { padding: 8px 16px; border: 2px solid transparent; background-color: var(--hole-color); color: var(--text-color); border-radius: 20px; cursor: pointer; font-weight: 600; transition: all var(--anim-fast); }
+        .lang-btn:hover { background-color: #3e566f; }
+        .lang-btn.active { border-color: var(--accent-color); background-color: var(--accent-color); }
+        .info-text { text-align: left; line-height: 1.7; }
+        .info-text strong { color: var(--accent-color); }
 
     </style>
 </head>
@@ -208,8 +234,9 @@
                 <button id="effects-toggle-btn" class="control-btn" title="Effektek be/ki">
                     <svg viewBox="0 0 24 24"><path d="M12,2.6L9.6,7.3L5,8.2L8.4,11.4L7.5,16L12,13.6L16.5,16L15.6,11.4L19,8.2L14.4,7.3L12,2.6M12,6.8L13.3,9.2L16,9.5L14,11.4L14.5,14L12,12.8L9.5,14L10,11.4L8,9.5L10.7,9.2L12,6.8Z" /></svg>
                 </button>
-                <button id="theme-toggle-btn" class="control-btn" title="Téma váltása">
-                    <svg viewBox="0 0 24 24"><path d="M7.5,2C5.71,3.15 4.5,5.18 4.5,7.5C4.5,9.82 5.71,11.85 7.5,13C9.29,11.85 10.5,9.82 10.5,7.5C10.5,5.18 9.29,3.15 7.5,2M19.07,3.5L20.5,4.93L4.93,20.5L3.5,19.07L19.07,3.5M12.5,10.5C10.66,10.5 9.11,11.39 8,12.64C9.47,14.5 11.66,15.5 14,15.5C14.83,15.5 15.62,15.39 16.36,15.2L12.5,11.34V10.5Z" /></svg>
+                <button id="theme-toggle-btn" class="control-btn" title="Téma váltása"></button>
+                <button id="info-btn" class="control-btn" title="Információ">
+                    <svg viewBox="0 0 24 24"><path d="M13,9H11V7H13M13,17H11V11H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z" /></svg>
                 </button>
             </div>
              <div id="preset-area" style="display: none;">
@@ -233,18 +260,66 @@
         </div>
     </div>
 
+    <div id="info-modal" class="modal-overlay">
+        <div class="modal-content">
+            <button id="close-info-btn" class="close-btn" title="Bezárás">&times;</button>
+            <h2>Információ</h2>
+            <div class="lang-selector">
+                <button id="lang-hu-btn" class="lang-btn active">Magyar</button>
+                <button id="lang-en-btn" class="lang-btn">English</button>
+            </div>
+            <div id="info-content-hu" class="info-text">
+                <p><strong>A játék célja:</strong> Találd ki a rejtett, 4 színből álló kódot 11 vagy kevesebb próbálkozásból.</p>
+                <p><strong>Hogyan kell játszani:</strong></p>
+                <ol>
+                    <li>Válassz egy színt a lenti palettáról, majd kattints egy üres helyre az aktív sorban a szín elhelyezéséhez.</li>
+                    <li>Miután mind a 4 helyet kitöltötted, kattints a pipa (✔) gombra a tipped ellenőrzéséhez.</li>
+                    <li>A tipped után visszajelzést kapsz a jobb oldali kis mezőben.</li>
+                </ol>
+                <p><strong>Visszajelzések:</strong></p>
+                <ul>
+                    <li><strong>Fekete színű gömb utalása:</strong> Egy tippedben szereplő szín helyes, és a pozíciója is jó.</li>
+                    <li><strong>Fehér színű gömb utalása:</strong> Egy tippedben szereplő szín helyes, de rossz helyen van.</li>
+                </ul>
+                <p>A visszajelző utalások sorrendje nem utal a színek helyes pozíciójára!</p>
+            </div>
+            <div id="info-content-en" class="info-text" style="display: none;">
+                <p><strong>Goal of the game:</strong> Guess the secret 4-color code in 11 attempts or less.</p>
+                <p><strong>How to play:</strong></p>
+                <ol>
+                    <li>Select a color from the palette below, then click an empty hole in the active row to place the color.</li>
+                    <li>Once you have filled all 4 holes, click the checkmark (✔) button to submit your guess.</li>
+                    <li>After your guess, you will receive feedback in the small box on the right.</li>
+                </ol>
+                <p><strong>Feedback indications:</strong></p>
+                <ul>
+                    <li><strong>Black color indication:</strong> One of your guessed colors is correct and in the correct position.</li>
+                    <li><strong>White color indication:</strong> One of your guessed colors is correct but in the wrong position.</li>
+                </ul>
+                <p>The order of the feedback indications does not correspond to the position of the colors!</p>
+            </div>
+        </div>
+    </div>
+
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const CODE_LENGTH = 4;
             const MAX_ATTEMPTS = 11;
             const COLORS = {
-                red:    "radial-gradient(circle at 12px 12px, #ff7b7b, #c81d1d)", white:  "radial-gradient(circle at 12px 12px, #ffffff, #b2b2b2)",
-                blue:   "radial-gradient(circle at 12px 12px, #7b99ff, #1d43c8)", pink:   "radial-gradient(circle at 12px 12px, #ff99f8, #c81db7)",
-                orange: "radial-gradient(circle at 12px 12px, #ffc77b, #c8781d)", purple: "radial-gradient(circle at 12px 12px, #c77bff, #781dc8)",
-                yellow: "radial-gradient(circle at 12px 12px, #ffff7b, #c8c81d)", green:  "radial-gradient(circle at 12px 12px, #7bffa2, #1dc84a)",
+                red:    "radial-gradient(circle at 12px 12px, #ff7b7b, #c81d1d)",
+                white:  "radial-gradient(circle at 12px 12px, #ffffff, #b2b2b2)",
+                blue:   "radial-gradient(circle at 12px 12px, #7b99ff, #1d43c8)",
+                brown:  "radial-gradient(circle at 12px 12px, #a0522d, #5c2d0c)",
+                orange: "radial-gradient(circle at 12px 12px, #ffc77b, #c8781d)",
+                purple: "radial-gradient(circle at 12px 12px, #c77bff, #781dc8)",
+                yellow: "radial-gradient(circle at 12px 12px, #ffff7b, #c8c81d)",
+                green:  "radial-gradient(circle at 12px 12px, #7bffa2, #1dc84a)",
             };
             const COLOR_NAMES = Object.keys(COLORS);
             
+            const yinyangIconHTML = `<span style="font-size: 1.8rem; line-height: 1;">☯</span>`;
+
             let secretCode = [], currentAttempt = 0, currentGuess = [], selectedHoleIndex = null;
             let actionHistory = [], isChecking = false, isGameOver = false;
             let effectsEnabled = true, effectInterval = null, highlightedColor = null;
@@ -269,6 +344,15 @@
             const leaderboardBtn = document.getElementById('leaderboard-btn');
             const leaderboardModal = document.getElementById('leaderboard-modal');
             const closeLeaderboardBtn = document.getElementById('close-leaderboard-btn');
+            
+            const infoBtn = document.getElementById('info-btn');
+            const infoModal = document.getElementById('info-modal');
+            const closeInfoBtn = document.getElementById('close-info-btn');
+            const langHuBtn = document.getElementById('lang-hu-btn');
+            const langEnBtn = document.getElementById('lang-en-btn');
+            const infoContentHu = document.getElementById('info-content-hu');
+            const infoContentEn = document.getElementById('info-content-en');
+
 
             function newGame() {
                 isChecking = false; isGameOver = false; currentAttempt = 0;
@@ -328,9 +412,28 @@
             }
             
             function handleUndo() { if (isChecking || isGameOver || actionHistory.length === 0) return; const lastAction = actionHistory.pop(); const activeRow = document.querySelector('.guess-row.active'); if (!activeRow) return; const holeEl = activeRow.querySelector(`.hole[data-hole-index='${lastAction.index}']`); const marbleEl = holeEl ? holeEl.querySelector('.marble') : null; if (marbleEl && currentGuess[lastAction.index] !== null) { marbleEl.classList.add('pop-out'); setTimeout(() => { currentGuess[lastAction.index] = lastAction.previousColor; updateGuessDisplay(); selectHole(lastAction.index); updateButtonStates(); }, 200); } else { currentGuess[lastAction.index] = lastAction.previousColor; updateGuessDisplay(); selectHole(lastAction.index); updateButtonStates(); } }
-            async function handleCheck(){clearColorHighlight();if(isChecking||isGameOver||currentGuess.includes(null))return;isChecking=!0,updateButtonStates(),deselectAllHoles();const{black:e,white:t}=evaluateGuess();if(await animateFeedbackDisplay(e,t),e===CODE_LENGTH)return void endGame(!0);if(currentAttempt++,currentAttempt>=MAX_ATTEMPTS)return void endGame(!1);currentGuess=Array(CODE_LENGTH).fill(null),actionHistory=[],updateActiveRow(),isChecking=!1,updateButtonStates()}
+            
+            async function handleCheck() {
+                clearColorHighlight();
+                if (isChecking || isGameOver || currentGuess.includes(null)) return;
+                isChecking = true;
+                updateButtonStates();
+                deselectAllHoles();
+                const { black, white } = evaluateGuess();
+                await animateFeedbackDisplay(black, white);
+                if (black === CODE_LENGTH) return endGame(true);
+                currentAttempt++;
+                if (currentAttempt >= MAX_ATTEMPTS) return endGame(false);
+                currentGuess = Array(CODE_LENGTH).fill(null);
+                actionHistory = [];
+                updateActiveRow();
+                isChecking = false;
+                updateButtonStates();
+            }
+            
             function evaluateGuess(){let e=0,t=0;const o=[...secretCode],n=[...currentGuess];for(let a=0;a<CODE_LENGTH;a++)n[a]===o[a]&&(e++,n[a]=null,o[a]=null);for(let l=0;l<CODE_LENGTH;l++)if(null!==n[l]){const s=o.indexOf(n[l]);-1!==s&&(t++,o[s]=null)}return{black:e,white:t}}
-            function createBoard(){for(let e=0;e<MAX_ATTEMPTS;e++){const t=document.createElement("div");t.className="guess-row",t.dataset.row=e,t.appendChild(document.createElement("div")).className="gray-feedback-display";const o=document.createElement("div");o.className="feedback-pegs";for(let n=0;n<CODE_LENGTH;n++)o.appendChild(document.createElement("div")).className="peg";t.appendChild(o);const a=document.createElement("div");a.className="guess-holes";for(let l=0;l<CODE_LENGTH;l++){const s=document.createElement("div");s.className="hole",s.dataset.holeIndex=l,a.appendChild(s)}t.appendChild(a),gameBoard.appendChild(t)}}
+            
+            function createBoard(){for(let e=0;e<MAX_ATTEMPTS;e++){const t=document.createElement("div");t.className="guess-row",t.dataset.row=e;const r=document.createElement("div");r.className="row-number-display",r.textContent=e+1,t.appendChild(r);const o=document.createElement("div");o.className="feedback-pegs";for(let n=0;n<CODE_LENGTH;n++)o.appendChild(document.createElement("div")).className="peg";t.appendChild(o);const a=document.createElement("div");a.className="guess-holes";for(let l=0;l<CODE_LENGTH;l++){const s=document.createElement("div");s.className="hole",s.dataset.holeIndex=l,a.appendChild(s)}t.appendChild(a),gameBoard.appendChild(t)}}
             
             function createPalette(){
                 colorPalette.innerHTML="";
@@ -342,7 +445,19 @@
                 }))
             }
 
-            async function animateFeedbackDisplay(e,t){const o=document.querySelector(`.guess-row[data-row='${currentAttempt}']`);if(!o)return;const n=o.querySelectorAll(".peg"),a=[...Array(e).fill("feedback-black"),...Array(t).fill("feedback-white")];for(let l=0;l<a.length;l++)await new Promise((e=>setTimeout(e,150))),n[l].classList.add(a[l],"reveal-anim");await new Promise((e=>setTimeout(e,300)))}
+            async function animateFeedbackDisplay(black, white) {
+                const rowEl = document.querySelector(`.guess-row[data-row='${currentAttempt}']`);
+                if (!rowEl) return;
+                
+                const pegEls = rowEl.querySelectorAll(".peg");
+                const feedbackClasses = [...Array(black).fill("feedback-black"), ...Array(white).fill("feedback-white")];
+                for (let i = 0; i < feedbackClasses.length; i++) {
+                    await new Promise(resolve => setTimeout(resolve, 150));
+                    pegEls[i].classList.add(feedbackClasses[i], "reveal-anim");
+                }
+                
+                await new Promise(resolve => setTimeout(resolve, 300));
+            }
             function updateButtonStates(){const e=!isChecking&&!isGameOver,t=!currentGuess.includes(null);undoButton.disabled=!e||0===actionHistory.length,checkButton.disabled=!e||!t,newGameButton.disabled=isChecking}
             function updateGuessDisplay() { const rowEl = document.querySelector(`.guess-row.active`); if (!rowEl) return; const holes = rowEl.querySelectorAll('.hole'); holes.forEach((hole, index) => { const existingMarble = hole.querySelector('.marble'); const newColor = currentGuess[index]; if (!newColor && existingMarble) { hole.innerHTML = ''; } else if (newColor) { if (!existingMarble || existingMarble.dataset.color !== newColor) { hole.innerHTML = ''; const marble = document.createElement('div'); marble.className = 'marble marble-add-anim'; marble.style.background = COLORS[newColor]; marble.dataset.color = newColor; if (newColor === highlightedColor) { marble.classList.add('highlighted'); } hole.appendChild(marble); } } }); }
             function placeColor(e,t){const o=currentGuess[e];o!==t&&(actionHistory.push({index:e,previousColor:o}),currentGuess[e]=t,updateGuessDisplay(),updateButtonStates())}
@@ -354,14 +469,33 @@
             function toggleEffects() { effectsEnabled = !effectsEnabled; effectsToggleButton.classList.toggle('active', effectsEnabled); localStorage.setItem('szinozonEffects', effectsEnabled ? 'on' : 'off'); if (effectsEnabled) { if (effectInterval) clearInterval(effectInterval); effectInterval = setInterval(runEffects, 12000); } else { if (effectInterval) clearInterval(effectInterval); } }
             function clearColorHighlight() { document.querySelectorAll('.marble.highlighted').forEach(m => m.classList.remove('highlighted')); highlightedColor = null; }
             function handleColorHighlight(e) { e.preventDefault(); if (isGameOver) return; const colorEl = e.target.closest('.palette-color'); if (!colorEl) return; const color = colorEl.dataset.color; const isAlreadyHighlighted = color === highlightedColor; clearColorHighlight(); if (!isAlreadyHighlighted) { highlightedColor = color; document.querySelectorAll(`.marble[data-color="${color}"]`).forEach(m => m.classList.add('highlighted')); } }
-            function toggleTheme() { document.body.classList.toggle("light-theme"); localStorage.setItem('szinozonTheme', document.body.classList.contains('light-theme') ? 'light' : 'dark'); }
+            
+            function toggleTheme() {
+                document.body.classList.toggle("light-theme");
+                localStorage.setItem('szinozonTheme', document.body.classList.contains('light-theme') ? 'light' : 'dark');
+            }
+
             function createPresetRow() { for (let i = 0; i < CODE_LENGTH; i++) { const hole = document.createElement('div'); hole.className = 'hole'; hole.dataset.holeIndex = i; presetRow.appendChild(hole); } }
             function updatePresetDisplay() { const holes = presetRow.querySelectorAll('.hole'); holes.forEach((hole, index) => { hole.innerHTML = ''; const color = presetGuess[index]; if (color) { const marble = document.createElement('div'); marble.className = 'marble'; marble.style.background = COLORS[color]; hole.appendChild(marble); } }); }
             function togglePresetFeature() { isPresetEnabled = !isPresetEnabled; presetToggleButton.classList.toggle('active', isPresetEnabled); presetArea.style.display = isPresetEnabled ? 'flex' : 'none'; localStorage.setItem('szinozonPreset', isPresetEnabled ? 'on' : 'off'); }
 
-            const savedTheme=localStorage.getItem("szinozonTheme")||"dark"; if(savedTheme === 'light') document.body.classList.add('light-theme');
-            const savedEffects = localStorage.getItem('szinozonEffects'); effectsEnabled = savedEffects !== 'off'; effectsToggleButton.classList.toggle('active', effectsEnabled); if (effectsEnabled) { effectInterval = setInterval(runEffects, 12000); }
-            const savedPreset = localStorage.getItem('szinozonPreset'); isPresetEnabled = savedPreset === 'on'; presetToggleButton.classList.toggle('active', isPresetEnabled); presetArea.style.display = isPresetEnabled ? 'flex' : 'none';
+            // --- INICIALIZÁLÁS ---
+            
+            const savedTheme=localStorage.getItem("szinozonTheme")||"dark"; 
+            if(savedTheme === 'light') document.body.classList.add('light-theme');
+            themeToggleButton.innerHTML = yinyangIconHTML;
+
+            const savedEffects = localStorage.getItem('szinozonEffects'); 
+            effectsEnabled = savedEffects === 'on';
+            effectsToggleButton.classList.toggle('active', effectsEnabled); 
+            if (effectsEnabled) { effectInterval = setInterval(runEffects, 12000); }
+            
+            const savedPreset = localStorage.getItem('szinozonPreset'); 
+            isPresetEnabled = savedPreset === 'on'; 
+            presetToggleButton.classList.toggle('active', isPresetEnabled); 
+            presetArea.style.display = isPresetEnabled ? 'flex' : 'none';
+
+            // --- ESEMÉNYKEZELŐK ---
 
             colorPalette.addEventListener('contextmenu', handleColorHighlight);
             colorPalette.addEventListener('click',e=>{if(isChecking||isGameOver)return;const t=e.target.closest(".palette-color");t&&null!==selectedHoleIndex&&(placeColor(selectedHoleIndex,t.dataset.color),selectNextAvailableHole())});
@@ -397,9 +531,28 @@
             presetRow.addEventListener('dragover', e => e.preventDefault());
             presetRow.addEventListener('contextmenu', e => { e.preventDefault(); const holeEl = e.target.closest('.hole'); if (holeEl) { const holeIndex = parseInt(holeEl.dataset.holeIndex); presetGuess[holeIndex] = null; updatePresetDisplay(); } });
 
-            leaderboardBtn.addEventListener('click', displayLeaderboard);
+            leaderboardBtn.addEventListener('click', () => leaderboardModal.classList.add('visible'));
             closeLeaderboardBtn.addEventListener('click', () => leaderboardModal.classList.remove('visible'));
             leaderboardModal.addEventListener('click', e => { if (e.target === leaderboardModal) leaderboardModal.classList.remove('visible'); });
+
+            infoBtn.addEventListener('click', () => infoModal.classList.add('visible'));
+            closeInfoBtn.addEventListener('click', () => infoModal.classList.remove('visible'));
+            infoModal.addEventListener('click', e => { if (e.target === infoModal) infoModal.classList.remove('visible'); });
+
+            langHuBtn.addEventListener('click', () => {
+                infoContentHu.style.display = 'block';
+                infoContentEn.style.display = 'none';
+                langHuBtn.classList.add('active');
+                langEnBtn.classList.remove('active');
+            });
+
+            langEnBtn.addEventListener('click', () => {
+                infoContentHu.style.display = 'none';
+                infoContentEn.style.display = 'block';
+                langEnBtn.classList.add('active');
+                langHuBtn.classList.remove('active');
+            });
+
 
             undoButton.addEventListener('click', handleUndo);
             checkButton.addEventListener('click', handleCheck);
