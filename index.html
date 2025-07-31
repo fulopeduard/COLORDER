@@ -438,6 +438,9 @@
             
             let timerInterval = null, elapsedTime = 0;
             let undoHoldTimer = null;
+            let paletteHoldTimer = null;
+            let longPressOnPalette = false;
+
 
             const gameBoard = document.getElementById('game-board');
             const colorPalette = document.getElementById('color-palette');
@@ -611,6 +614,7 @@
             function updateButtonStates() {
                 const canInteract = !isChecking && !isGameOver;
                 undoButton.classList.toggle('disabled-action', actionHistory.length === 0);
+                undoButton.disabled = isChecking;
                 checkButton.disabled = !canInteract || currentGuess.includes(null);
                 newGameButton.disabled = isChecking;
             }
@@ -636,8 +640,9 @@
 
             function runEffects() { if (!effectsEnabled || isGameOver) return; const placedMarbles = document.querySelectorAll('.marble'); if (placedMarbles.length === 0) return; const uniqueColorsOnBoard = [...new Set(Array.from(placedMarbles).map(m => m.dataset.color))]; if (uniqueColorsOnBoard.length === 0) return; const colorToAnimate = uniqueColorsOnBoard[Math.floor(Math.random() * uniqueColorsOnBoard.length)]; const marblesToAnimate = Array.from(document.querySelectorAll(`.marble[data-color="${colorToAnimate}"]`)).sort((a,b)=>parseInt(a.closest(".guess-row").dataset.row)-parseInt(b.closest(".guess-row").dataset.row)); const effectClass = Math.random() < 0.5 ? 'shimmer-effect' : 'pulse-effect'; const animationDuration = effectClass === 'shimmer-effect' ? 1000 : 700; marblesToAnimate.forEach((marble, i) => { setTimeout(() => { marble.classList.add(effectClass); setTimeout(() => { marble.classList.remove(effectClass); }, animationDuration); }, i * 150); }); }
             function toggleEffects() { effectsEnabled = !effectsEnabled; effectsToggleButton.classList.toggle('active', effectsEnabled); localStorage.setItem('szinozonEffects', effectsEnabled ? 'on' : 'off'); if (effectsEnabled) { if (effectInterval) clearInterval(effectInterval); effectInterval = setInterval(runEffects, 12000); } else { if (effectInterval) clearInterval(effectInterval); } }
-            function clearColorHighlight() { document.querySelectorAll('.marble.highlighted').forEach(m => m.classList.remove('highlighted')); highlightedColor = null; }
+            
             function handleColorHighlight(e) { e.preventDefault(); if (isGameOver) return; const colorEl = e.target.closest('.palette-color'); if (!colorEl) return; const color = colorEl.dataset.color; const isAlreadyHighlighted = color === highlightedColor; clearColorHighlight(); if (!isAlreadyHighlighted) { highlightedColor = color; document.querySelectorAll(`.marble[data-color="${color}"]`).forEach(m => m.classList.add('highlighted')); } }
+            function clearColorHighlight() { document.querySelectorAll('.marble.highlighted').forEach(m => m.classList.remove('highlighted')); highlightedColor = null; }
             
             function toggleTheme() {
                 document.body.classList.toggle("light-theme");
@@ -705,8 +710,43 @@
                 }
             });
 
+            // Paletta eseménykezelők
+            const startPaletteHold = (e) => {
+                const colorEl = e.target.closest(".palette-color");
+                if (!colorEl) return;
+                if (e.type === 'touchstart') e.preventDefault();
+                longPressOnPalette = false; 
+                paletteHoldTimer = setTimeout(() => {
+                    longPressOnPalette = true;
+                    handleColorHighlight(e);
+                    if ('vibrate' in navigator) navigator.vibrate(50);
+                }, 500);
+            };
+
+            const cancelPaletteHold = () => {
+                clearTimeout(paletteHoldTimer);
+            };
+
+            colorPalette.addEventListener('mousedown', startPaletteHold);
+            colorPalette.addEventListener('mouseup', cancelPaletteHold);
+            colorPalette.addEventListener('mouseleave', cancelPaletteHold);
+            colorPalette.addEventListener('touchstart', startPaletteHold, { passive: false });
+            colorPalette.addEventListener('touchend', cancelPaletteHold);
             colorPalette.addEventListener('contextmenu', handleColorHighlight);
-            colorPalette.addEventListener('click',e=>{if(isChecking||isGameOver)return;const t=e.target.closest(".palette-color");t&&null!==selectedHoleIndex&&(placeColor(selectedHoleIndex,t.dataset.color),selectNextAvailableHole())});
+            
+            colorPalette.addEventListener('click', e => {
+                const colorEl = e.target.closest(".palette-color");
+                if (!colorEl || isChecking || isGameOver) return;
+                if (longPressOnPalette) {
+                    e.preventDefault();
+                    return;
+                }
+                if (selectedHoleIndex !== null) {
+                    placeColor(selectedHoleIndex, colorEl.dataset.color);
+                    selectNextAvailableHole();
+                }
+            });
+
             gameBoard.addEventListener('click',e=>{if(isChecking||isGameOver)return;const t=e.target.closest(".hole");t&&t.closest(".guess-row.active")&&selectHole(parseInt(t.dataset.holeIndex))});
             gameBoard.addEventListener('contextmenu', e => {
                 e.preventDefault();
