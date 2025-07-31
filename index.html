@@ -152,7 +152,22 @@
         }
 
         .controls { display: flex; justify-content: center; align-items: center; gap: 10px; flex-wrap: wrap;}
-        .control-btn { background: var(--board-color); color: var(--text-color); border: none; border-radius: 50%; width: 50px; height: 50px; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 4px 8px var(--shadow-color); transition: all var(--anim-fast) ease-out; }
+        /* MÓDOSÍTVA: Gombok érintésének javítása mobilon */
+        .control-btn {
+            background: var(--board-color);
+            color: var(--text-color);
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0 4px 8px var(--shadow-color);
+            transition: all var(--anim-fast) ease-out;
+            touch-action: manipulation;
+        }
         .control-btn:hover:not(:disabled) { background: var(--accent-color); transform: translateY(-2px); }
         .control-btn svg { width: 26px; height: 26px; fill: currentColor; }
         
@@ -179,7 +194,6 @@
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(44, 62, 80, 0.85); backdrop-filter: blur(5px); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
         .modal-overlay.visible { opacity: 1; pointer-events: auto; }
         
-        /* MÓDOSÍTVA: Az ablak görgethetővé téve kisebb képernyőkön */
         .modal-content {
             background: var(--board-color);
             padding: 25px;
