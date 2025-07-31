@@ -112,6 +112,11 @@
         .marble-add-anim { animation: dropInBounce 0.5s ease-out forwards; }
         @keyframes dropInBounce { 0% { transform: translateY(-50px) scale(0.3); opacity: 0; } 60% { transform: translateY(5px) scale(1.1); opacity: 1; } 80% { transform: translateY(-2px) scale(0.95); } 100% { transform: translateY(0) scale(1); opacity: 1; } }
         
+        #preset-row .marble, .guess-row.active .marble {
+            pointer-events: auto;
+            cursor: pointer;
+        }
+
         .marble.pop-out { animation: popOut 0.2s ease-in forwards; }
         @keyframes popOut { from { transform: scale(1); opacity: 1; } to { transform: scale(0.3); opacity: 0; } }
 
@@ -325,7 +330,7 @@
                     </button>
                     <button id="theme-toggle-btn" class="control-btn" title="Téma váltása"></button>
                     <button id="controls-btn" class="control-btn" title="Irányítás">
-                        <svg viewBox="0 0 24 24"><path d="M12.7,1.2L16.6,3L15.9,7.3C16.9,7.7 17.8,8.4 18.5,9.2L22.2,8.2L23.8,11.8L20.9,14C21,14.7 21,15.3 21,16C21,16.7 21,17.3 20.9,18L23.8,20.2L22.2,23.8L18.5,22.8C17.8,23.6 16.9,24.3 15.9,24.7L16.6,29L12.7,30.8L11.4,26.7C10.4,26.9 9.5,27 8.5,27C6.8,27 5.2,26.5 3.8,25.6L3.1,30.2L0,29.2L1.1,23.7C0.5,23.1 0,22.2 0,21.3V10.7C0,9.8 0.5,8.9 1.1,8.3L0,2.8L3.1,1.8L3.8,6.4C5.2,5.5 6.8,5 8.5,5C9.5,5 10.4,5.1 11.4,5.3L12.7,1.2M8.5,11C7.1,11 6,12.1 6,13.5C6,14.9 7.1,16 8.5,16C9.9,16 11,14.9 11,13.5C11,12.1 9.9,11 8.5,11Z" /></svg>
+                        <svg viewBox="0 0 24 24"><path d="M12,2L10.5,6.5L14,7.5V17.37C13.38,17.13 12.7,17 12,17C10.14,17 8.5,18.27 8.5,19.88C8.5,21.5 10.14,22.77 12,22.77C13.86,22.77 15.5,21.5 15.5,19.88V12.5L19.5,11L18,2H12M12,4A1,1 0 0,1 13,5A1,1 0 0,1 12,6A1,1 0 0,1 11,5A1,1 0 0,1 12,4Z" /></svg>
                     </button>
                     <button id="info-btn" class="control-btn" title="Információ">
                         <svg viewBox="0 0 24 24"><path d="M13,9H11V7H13M13,17H11V11H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z" /></svg>
@@ -422,8 +427,8 @@
             <div id="controls-content-hu" class="info-text">
                 <h3><img src="data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ecf0f1'%3E%3Cpath d='M12,2A10,10 0 0,0 2,12C2,16.42 5.58,20 10,20C10.55,20 11.08,19.92 11.6,19.78L10.13,17.39C10.09,17.39 10.05,17.39 10,17.39C7.4,17.39 5.25,15.68 4.63,13.43C4.2,11.83 4.86,10.23 6.11,9.33L4.36,8.19C3.12,9.5 2.65,11.33 3.19,13.07C4.08,16.19 6.84,18.39 10,18.39C10.45,18.39 10.89,18.34 11.32,18.25L12.8,20.7C12.54,20.8 12.27,20.89 12,20.89C6.47,20.89 2,16.42 2,10.89C2,8.4 3.14,6.2 5,4.73L6.75,5.87C5.5,6.77 4.84,8.37 5.27,9.97C5.9,12.22 8,13.93 10.6,13.93C11,13.93 11.39,13.89 11.78,13.8L13.33,16.29C12.35,17.54 10.73,18.29 9,18.29C6.24,18.29 4,16.05 4,13.29C4,10.53 6.24,8.29 9,8.29C10.1,8.29 11.12,8.62 12,9.2V2Z'/%3E%3C/svg%3E" alt="Touch" width="22" style="vertical-align: middle; margin-right: 8px;">Érintőképernyő (Touch)</h3>
                 <ul>
-                    <li><strong>Szín elhelyezése:</strong> Koppints egy színre a palettán, majd egy üres helyre. Alternatívaként húzd a színt (<strong>Drag and Drop</strong>) a helyére.</li>
-                    <li><strong>Szín törlése:</strong> Koppints egy már elhelyezett színre a tippsoron.</li>
+                    <li><strong>Szín elhelyezése:</strong> Koppints egy színre a palettán, majd egy üres helyre. Alternatívaként húzd a színt (<strong>Drag and Drop</strong>) a helyére a tippsoron vagy a mintasoron.</li>
+                    <li><strong>Szín törlése:</strong> <strong>Hosszan nyomj</strong> egy már elhelyezett színre a tippsoron vagy a mintasoron.</li>
                     <li><strong>Szín kiemelése:</strong> <strong>Hosszan nyomj</strong> egy színre a palettán, hogy kiemeld az összes előfordulását a táblán.</li>
                     <li><strong>Visszavonás:</strong> <strong>Rövid koppintás</strong> a ↩️ gombra.</li>
                     <li><strong>Újrakezdés:</strong> <strong>Hosszú nyomás</strong> a ↩️ gombra (megerősítést kér).</li>
@@ -434,7 +439,7 @@
                 <h3><img src="data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ecf0f1'%3E%3Cpath d='M6,2C4.89,2 4,2.89 4,4V15C4,16.11 4.89,17 6,17H18C19.11,17 20,16.11 20,15V10C20,8.89 19.11,8 18,8H11L15,4H9L4.5,9.5L6,11H18V4C18,2.89 17.11,2 16,2H6M6,18C4.89,18 4,18.89 4,20C4,21.11 4.89,22 6,22H18C19.11,22 20,21.11 20,20C20,18.89 19.11,18 18,18H6Z'/%3E%3C/svg%3E" alt="Mouse" width="22" style="vertical-align: middle; margin-right: 8px;">Egér (Mouse)</h3>
                 <ul>
                     <li><strong>Szín elhelyezése:</strong> <strong>Bal klikk</strong> egy színre, majd egy üres helyre. Alternatívaként húzd a színt (<strong>Drag and Drop</strong>) a helyére a tippsoron vagy a mintasoron.</li>
-                    <li><strong>Szín törlése:</strong> <strong>Jobb klikk</strong> egy már elhelyezett színre a tippsoron.</li>
+                    <li><strong>Szín törlése:</strong> <strong>Jobb klikk</strong> vagy <strong>hosszú lenyomás</strong> egy már elhelyezett színre a tippsoron vagy a mintasoron.</li>
                     <li><strong>Szín kiemelése:</strong> <strong>Jobb klikk</strong> vagy <strong>hosszú lenyomás</strong> egy színre a palettán.</li>
                     <li><strong>Visszavonás:</strong> <strong>Bal klikk</strong> a ↩️ gombra.</li>
                     <li><strong>Újrakezdés:</strong> <strong>Hosszú lenyomás</strong> a ↩️ gombra (megerősítést kér).</li>
@@ -451,8 +456,8 @@
             <div id="controls-content-en" class="info-text" style="display: none;">
                 <h3><img src="data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ecf0f1'%3E%3Cpath d='M12,2A10,10 0 0,0 2,12C2,16.42 5.58,20 10,20C10.55,20 11.08,19.92 11.6,19.78L10.13,17.39C10.09,17.39 10.05,17.39 10,17.39C7.4,17.39 5.25,15.68 4.63,13.43C4.2,11.83 4.86,10.23 6.11,9.33L4.36,8.19C3.12,9.5 2.65,11.33 3.19,13.07C4.08,16.19 6.84,18.39 10,18.39C10.45,18.39 10.89,18.34 11.32,18.25L12.8,20.7C12.54,20.8 12.27,20.89 12,20.89C6.47,20.89 2,16.42 2,10.89C2,8.4 3.14,6.2 5,4.73L6.75,5.87C5.5,6.77 4.84,8.37 5.27,9.97C5.9,12.22 8,13.93 10.6,13.93C11,13.93 11.39,13.89 11.78,13.8L13.33,16.29C12.35,17.54 10.73,18.29 9,18.29C6.24,18.29 4,16.05 4,13.29C4,10.53 6.24,8.29 9,8.29C10.1,8.29 11.12,8.62 12,9.2V2Z'/%3E%3C/svg%3E" alt="Touch" width="22" style="vertical-align: middle; margin-right: 8px;">Touch Controls</h3>
                 <ul>
-                    <li><strong>Place Color:</strong> Tap a color on the palette, then tap an empty hole. Alternatively, <strong>Drag and Drop</strong> the color to its place.</li>
-                    <li><strong>Remove Color:</strong> Tap an already placed color on the guess row.</li>
+                    <li><strong>Place Color:</strong> Tap a color on the palette, then tap an empty hole. Alternatively, <strong>Drag and Drop</strong> the color to its place on the guess or preset row.</li>
+                    <li><strong>Remove Color:</strong> <strong>Long press</strong> a placed color in the guess row or preset row to remove it.</li>
                     <li><strong>Highlight Color:</strong> <strong>Long press</strong> a color on the palette to highlight all its occurrences on the board.</li>
                     <li><strong>Undo:</strong> <strong>Short tap</strong> the ↩️ button.</li>
                     <li><strong>Restart Game:</strong> <strong>Long press</strong> the ↩️ button (asks for confirmation).</li>
@@ -463,7 +468,7 @@
                 <h3><img src="data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ecf0f1'%3E%3Cpath d='M6,2C4.89,2 4,2.89 4,4V15C4,16.11 4.89,17 6,17H18C19.11,17 20,16.11 20,15V10C20,8.89 19.11,8 18,8H11L15,4H9L4.5,9.5L6,11H18V4C18,2.89 17.11,2 16,2H6M6,18C4.89,18 4,18.89 4,20C4,21.11 4.89,22 6,22H18C19.11,22 20,21.11 20,20C20,18.89 19.11,18 18,18H6Z'/%3E%3C/svg%3E" alt="Mouse" width="22" style="vertical-align: middle; margin-right: 8px;">Mouse Controls</h3>
                 <ul>
                     <li><strong>Place Color:</strong> <strong>Left-click</strong> a color, then an empty hole. Alternatively, <strong>Drag and Drop</strong> the color to the guess or preset row.</li>
-                    <li><strong>Remove Color:</strong> <strong>Right-click</strong> an already placed color in the guess row.</li>
+                    <li><strong>Remove Color:</strong> <strong>Right-click</strong> or <strong>long press</strong> a placed color in the guess or preset row.</li>
                     <li><strong>Highlight Color:</strong> <strong>Right-click</strong> or <strong>long press</strong> a color on the palette.</li>
                     <li><strong>Undo:</strong> <strong>Left-click</strong> the ↩️ button.</li>
                     <li><strong>Restart Game:</strong> <strong>Long press</strong> the ↩️ button (asks for confirmation).</li>
@@ -515,7 +520,9 @@
             let undoHoldTimer = null;
             let paletteHoldTimer = null;
             let longPressOnPalette = false;
-
+            let presetMarbleHoldTimer = null;
+            let guessMarbleHoldTimer = null;
+            let longPressOnGuessMarble = false;
 
             const gameBoard = document.getElementById('game-board');
             const colorPalette = document.getElementById('color-palette');
@@ -708,6 +715,31 @@
             function deselectAllHoles(){document.querySelectorAll(".hole.selected-hole").forEach((e=>e.classList.remove("selected-hole"))),selectedHoleIndex=null}
             function selectNextAvailableHole(){const e=currentGuess.indexOf(null);-1!==e?selectHole(e):(deselectAllHoles(),updateButtonStates())}
             
+            function removeColorFromGuess(holeIndex) {
+                const colorToRemove = currentGuess[holeIndex];
+                if (colorToRemove) {
+                    actionHistory.push({ index: holeIndex, previousColor: colorToRemove });
+                    const activeRow = document.querySelector('.guess-row.active');
+                    const holeEl = activeRow ? activeRow.querySelector(`.hole[data-hole-index='${holeIndex}']`) : null;
+                    const marbleEl = holeEl ? holeEl.querySelector('.marble') : null;
+
+                    if (marbleEl) {
+                        marbleEl.classList.add('pop-out');
+                        setTimeout(() => {
+                            currentGuess[holeIndex] = null;
+                            updateGuessDisplay();
+                            selectHole(holeIndex);
+                            updateButtonStates();
+                        }, 200);
+                    } else {
+                         currentGuess[holeIndex] = null;
+                         updateGuessDisplay();
+                         selectHole(holeIndex);
+                         updateButtonStates();
+                    }
+                }
+            }
+            
             function updateActiveRow() { 
                 document.querySelectorAll(".guess-row.active").forEach(row => row.classList.remove('active')); 
                 const activeRow = document.querySelector(`.guess-row[data-row='${currentAttempt}']`); 
@@ -828,38 +860,64 @@
                     selectNextAvailableHole();
                 }
             });
+            
+            const startGuessMarbleHold = (e) => {
+                const marbleEl = e.target.closest('.guess-row.active .marble');
+                if (!marbleEl) return;
+                if (e.type === 'touchstart') e.preventDefault();
+                longPressOnGuessMarble = false;
+                guessMarbleHoldTimer = setTimeout(() => {
+                    longPressOnGuessMarble = true;
+                    const holeEl = e.target.closest('.hole');
+                    if (holeEl) {
+                        removeColorFromGuess(parseInt(holeEl.dataset.holeIndex));
+                    }
+                    if ('vibrate' in navigator) navigator.vibrate(50);
+                }, 500);
+            };
 
-            gameBoard.addEventListener('click',e=>{if(isChecking||isGameOver)return;const t=e.target.closest(".hole");t&&t.closest(".guess-row.active")&&selectHole(parseInt(t.dataset.holeIndex))});
+            const cancelGuessMarbleHold = () => {
+                clearTimeout(guessMarbleHoldTimer);
+            };
+
+            gameBoard.addEventListener('mousedown', startGuessMarbleHold);
+            gameBoard.addEventListener('mouseup', cancelGuessMarbleHold);
+            gameBoard.addEventListener('mouseleave', cancelGuessMarbleHold);
+            gameBoard.addEventListener('touchstart', startGuessMarbleHold, { passive: false });
+            gameBoard.addEventListener('touchend', cancelGuessMarbleHold);
+
+            gameBoard.addEventListener('click',e=>{
+                if (longPressOnGuessMarble) { longPressOnGuessMarble = false; return; }
+                if(isChecking||isGameOver)return;
+                const t=e.target.closest(".hole");
+                t&&t.closest(".guess-row.active")&&selectHole(parseInt(t.dataset.holeIndex))
+            });
             gameBoard.addEventListener('contextmenu', e => {
                 e.preventDefault();
                 if (isChecking || isGameOver) return;
                 const holeEl = e.target.closest('.hole');
-                if (!holeEl || !holeEl.closest('.guess-row.active')) return;
-                const holeIndex = parseInt(holeEl.dataset.holeIndex);
-                const colorToRemove = currentGuess[holeIndex];
-                if (colorToRemove) {
-                    actionHistory.push({ index: holeIndex, previousColor: colorToRemove });
-                    const marbleEl = holeEl.querySelector('.marble');
-                    if (marbleEl) {
-                        marbleEl.classList.add('pop-out');
-                        setTimeout(() => {
-                            currentGuess[holeIndex] = null;
-                            updateGuessDisplay();
-                            selectHole(holeIndex);
-                            updateButtonStates();
-                        }, 200);
-                    }
+                if (holeEl && holeEl.closest('.guess-row.active')) {
+                    removeColorFromGuess(parseInt(holeEl.dataset.holeIndex));
                 }
             });
+
             colorPalette.addEventListener('dragstart',e=>{const t=e.target.closest(".palette-color");t&&(e.dataTransfer.setData("text/plain",t.dataset.color),e.dataTransfer.effectAllowed="copy",document.body.classList.add("dragging"))});
             colorPalette.addEventListener('dragend',()=>{document.body.classList.remove("dragging")});
             gameBoard.addEventListener('dragover',e=>{const t=e.target.closest(".hole");t&&t.closest(".guess-row.active")&&(e.preventDefault(),document.querySelectorAll(".drag-over").forEach((e=>e.classList.remove("drag-over"))),t.classList.add("drag-over"))});
             gameBoard.addEventListener('dragleave',e=>{const t=e.target.closest(".hole");t&&t.classList.remove("drag-over")});
             gameBoard.addEventListener('drop',e=>{e.preventDefault(),document.querySelectorAll(".drag-over").forEach((e=>e.classList.remove("drag-over")));const t=e.target.closest(".hole");t&&t.closest(".guess-row.active")&&(placeColor(parseInt(t.dataset.holeIndex),e.dataTransfer.getData("text/plain")),selectNextAvailableHole())});
-
+            
+            const handlePresetMarbleRemove = (e) => { const holeEl = e.target.closest('.hole'); if (holeEl) { const holeIndex = parseInt(holeEl.dataset.holeIndex); presetGuess[holeIndex] = null; updatePresetDisplay(); }};
+            const startPresetMarbleHold = (e) => { const marbleEl = e.target.closest('#preset-row .marble'); if (!marbleEl) return; if (e.type === 'touchstart') e.preventDefault(); presetMarbleHoldTimer = setTimeout(() => { handlePresetMarbleRemove(e); if ('vibrate' in navigator) navigator.vibrate(50); }, 500); };
+            const cancelPresetMarbleHold = () => { clearTimeout(presetMarbleHoldTimer); };
+            presetRow.addEventListener('mousedown', startPresetMarbleHold);
+            presetRow.addEventListener('mouseup', cancelPresetMarbleHold);
+            presetRow.addEventListener('mouseleave', cancelPresetMarbleHold);
+            presetRow.addEventListener('touchstart', startPresetMarbleHold, { passive: false });
+            presetRow.addEventListener('touchend', cancelPresetMarbleHold);
             presetRow.addEventListener('drop', e => { e.preventDefault(); const holeEl = e.target.closest('.hole'); if (holeEl) { const color = e.dataTransfer.getData('text/plain'); const holeIndex = parseInt(holeEl.dataset.holeIndex); presetGuess[holeIndex] = color; updatePresetDisplay(); } });
             presetRow.addEventListener('dragover', e => e.preventDefault());
-            presetRow.addEventListener('contextmenu', e => { e.preventDefault(); const holeEl = e.target.closest('.hole'); if (holeEl) { const holeIndex = parseInt(holeEl.dataset.holeIndex); presetGuess[holeIndex] = null; updatePresetDisplay(); } });
+            presetRow.addEventListener('contextmenu', e => { e.preventDefault(); handlePresetMarbleRemove(e); });
 
             leaderboardBtn.addEventListener('click', () => { settingsPanel.classList.remove('visible'); leaderboardModal.classList.add('visible'); });
             closeLeaderboardBtn.addEventListener('click', () => leaderboardModal.classList.remove('visible'));
