@@ -354,7 +354,6 @@
             let isPresetEnabled = false;
             let presetGuess = Array(CODE_LENGTH).fill(null);
             let timerInterval = null, elapsedTime = 0;
-            let isTogglingEffect = false; // MÓDOSÍTVA: Zászló a dupla kattintás ellen
 
             const gameBoard = document.getElementById('game-board');
             const colorPalette = document.getElementById('color-palette');
@@ -495,26 +494,7 @@
             function selectNextAvailableHole(){const e=currentGuess.indexOf(null);-1!==e?selectHole(e):(deselectAllHoles(),updateButtonStates())}
             function updateActiveRow() { document.querySelectorAll(".guess-row.active").forEach(row => row.classList.remove('active')); const activeRow = document.querySelector(`.guess-row[data-row='${currentAttempt}']`); if (activeRow) { activeRow.classList.add("active"); if (isPresetEnabled) { currentGuess = [...presetGuess]; updateGuessDisplay(); } selectNextAvailableHole(); } }
             function runEffects() { if (!effectsEnabled || isGameOver) return; const placedMarbles = document.querySelectorAll('.marble'); if (placedMarbles.length === 0) return; const uniqueColorsOnBoard = [...new Set(Array.from(placedMarbles).map(m => m.dataset.color))]; if (uniqueColorsOnBoard.length === 0) return; const colorToAnimate = uniqueColorsOnBoard[Math.floor(Math.random() * uniqueColorsOnBoard.length)]; const marblesToAnimate = Array.from(document.querySelectorAll(`.marble[data-color="${colorToAnimate}"]`)).sort((a,b)=>parseInt(a.closest(".guess-row").dataset.row)-parseInt(b.closest(".guess-row").dataset.row)); const effectClass = Math.random() < 0.5 ? 'shimmer-effect' : 'pulse-effect'; const animationDuration = effectClass === 'shimmer-effect' ? 1000 : 700; marblesToAnimate.forEach((marble, i) => { setTimeout(() => { marble.classList.add(effectClass); setTimeout(() => { marble.classList.remove(effectClass); }, animationDuration); }, i * 150); }); }
-            
-            // MÓDOSÍTVA: Robusztusabb ki/be kapcsoló funkció
-            function toggleEffects() {
-                if (isTogglingEffect) return;
-                isTogglingEffect = true;
-
-                effectsEnabled = !effectsEnabled;
-                effectsToggleButton.classList.toggle('active', effectsEnabled);
-                localStorage.setItem('szinozonEffects', effectsEnabled ? 'on' : 'off');
-                
-                if (effectsEnabled) {
-                    if (effectInterval) clearInterval(effectInterval);
-                    effectInterval = setInterval(runEffects, 12000);
-                } else {
-                    if (effectInterval) clearInterval(effectInterval);
-                }
-
-                setTimeout(() => { isTogglingEffect = false; }, 200);
-            }
-
+            function toggleEffects() { effectsEnabled = !effectsEnabled; effectsToggleButton.classList.toggle('active', effectsEnabled); localStorage.setItem('szinozonEffects', effectsEnabled ? 'on' : 'off'); if (effectsEnabled) { if (effectInterval) clearInterval(effectInterval); effectInterval = setInterval(runEffects, 12000); } else { if (effectInterval) clearInterval(effectInterval); } }
             function clearColorHighlight() { document.querySelectorAll('.marble.highlighted').forEach(m => m.classList.remove('highlighted')); highlightedColor = null; }
             function handleColorHighlight(e) { e.preventDefault(); if (isGameOver) return; const colorEl = e.target.closest('.palette-color'); if (!colorEl) return; const color = colorEl.dataset.color; const isAlreadyHighlighted = color === highlightedColor; clearColorHighlight(); if (!isAlreadyHighlighted) { highlightedColor = color; document.querySelectorAll(`.marble[data-color="${color}"]`).forEach(m => m.classList.add('highlighted')); } }
             
@@ -607,7 +587,11 @@
             newGameButton.addEventListener('click', newGame);
             themeToggleButton.addEventListener('click', toggleTheme);
             
-            // MÓDOSÍTVA: A korábbi 'touchend' eseménykezelő eltávolítva, a sima 'click' marad, de a funkció már védett
+            // MÓDOSÍTVA: Külön eseménykezelő telefonos érintésre
+            effectsToggleButton.addEventListener('touchend', (e) => {
+                e.preventDefault(); // Megakadályozza a dupla eseményt (touch + click)
+                toggleEffects();
+            });
             effectsToggleButton.addEventListener('click', toggleEffects);
 
             presetToggleButton.addEventListener('click', togglePresetFeature);
