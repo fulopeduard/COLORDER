@@ -55,12 +55,12 @@
 
         .game-container { display: flex; flex-direction: column; align-items: center; gap: 15px; }
         
-        /* --- MÓDOSÍTOTT STÍLUSOK AZ ELRENDEZÉSHEZ --- */
+        /* === MÓDOSÍTOTT SZEKCIÓ: ELRENDEZÉS === */
         .game-layout {
             display: flex;
-            align-items: center; /* Függőlegesen középre igazítás */
-            gap: 15px; /* Kisebb távolság a játéktér és a gombok között */
-            flex-wrap: wrap; 
+            align-items: center; 
+            gap: 15px;
+            flex-wrap: nowrap;  /* Biztosítja, hogy az elemek egymás mellett maradjanak */
             justify-content: center;
         }
 
@@ -94,7 +94,7 @@
             align-items: center; 
             gap: 10px;
         }
-        /* --- STÍLUSOK VÉGE --- */
+        /* === MÓDOSÍTÁS VÉGE === */
         
         #game-over-area {
             flex-direction: column; align-items: center;
@@ -168,7 +168,7 @@
         .marble.highlighted { transform: scale(1.05); box-shadow: 0 0 10px 3px var(--highlight-glow-color); }
 
         .palette-area { text-align: center; width: 100%; }
-        #color-palette { display: flex; flex-wrap: nowrap; justify-content: center; gap: 8px; } /* Removed margin-bottom */
+        #color-palette { display: flex; flex-wrap: nowrap; justify-content: center; gap: 8px; }
         .palette-color {
             width: 38px; height: 38px; border-radius: 50%; cursor: pointer;
             transition: transform var(--anim-fast), box-shadow var(--anim-fast);
@@ -212,26 +212,24 @@
         
         .control-btn.active { background-color: var(--accent-color); box-shadow: 0 2px 4px var(--shadow-color), inset 0 0 5px rgba(0,0,0,0.2); }
         
-        /* --- MÓDOSÍTOTT STÍLUSOK A MINTA SORHOZ --- */
+        /* === MÓDOSÍTOTT SZEKCIÓ: MINTA SOR === */
         #preset-area { 
             background-color: var(--board-color); 
             border-radius: 12px; 
-            display: flex; /* Alapból flex, a JS kapcsolja ki-be */
+            display: flex;
             flex-direction: column; 
             align-items: center; 
             gap: 8px; 
-            padding: 10px 15px;
+            padding: 8px; /* Kisebb padding */
             margin-top: 0;
         }
-        #preset-area h4 { margin: 0; font-weight: 400; opacity: 0.8; font-size: 0.9rem; }
         #preset-row { border: 2px dashed var(--border-color); gap: 6px; padding: 2px; }
 
-        /* Kisebb lyukak csak a minta sorban */
         #preset-area .hole {
             width: 30px;
             height: 30px;
         }
-        /* --- STÍLUSOK VÉGE --- */
+        /* === MÓDOSÍTÁS VÉGE === */
 
         #timer-display {
             display: flex;
@@ -328,18 +326,21 @@
                 </div>
             </div>
 
-        </div> <div class="bottom-panel">
-            <div id="preset-area" style="display: none;">
-                <h4>Következő tipp mintája</h4>
-                <div id="preset-row" class="guess-row"></div>
-            </div>
+        </div> 
+        
+        <div class="bottom-panel">
             <div id="timer-display">
                 <svg viewBox="0 0 24 24"><path d="M12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M13,7H11V13H16V11H13V7Z" /></svg>
                 <span id="timer">00:00</span>
             </div>
-        </div>
+            <div id="preset-area" style="display: none;">
+                <div id="preset-row" class="guess-row"></div>
+            </div>
+            </div>
 
-    </div> <div id="leaderboard-modal" class="modal-overlay">
+    </div> 
+    
+    <div id="leaderboard-modal" class="modal-overlay">
         <div class="modal-content">
             <button id="close-leaderboard-btn" class="close-btn" title="Bezárás">&times;</button>
             <h2>Ranglista</h2>
