@@ -172,8 +172,11 @@
         
         .control-btn.active { background-color: var(--accent-color); box-shadow: 0 2px 4px var(--shadow-color), inset 0 0 5px rgba(0,0,0,0.2); }
         
-        #preset-area { width: 100%; max-width: 380px; padding: 10px; margin-top: 10px; background-color: var(--board-color); border-radius: 12px; flex-direction: column; align-items: center; gap: 8px; }
-        #preset-area h4 { margin: 0; font-weight: 400; opacity: 0.8; }
+        #preset-area {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
         #preset-row { border: 2px dashed var(--border-color); }
 
         #timer-display {
@@ -223,6 +226,33 @@
         .info-text { text-align: left; line-height: 1.7; }
         .info-text strong { color: var(--accent-color); }
 
+        @media (max-width: 500px) {
+            .controls {
+                justify-content: space-around;
+            }
+
+            #leaderboard-btn,
+            #timer-display,
+            #undo-button,
+            #check-button,
+            #new-game-button {
+                order: 1;
+            }
+
+            #preset-area {
+                order: 2;
+                width: 100%;
+                justify-content: center;
+                padding: 8px 0;
+            }
+
+            #preset-toggle-btn,
+            #effects-toggle-btn,
+            #theme-toggle-btn,
+            #info-btn {
+                order: 3;
+            }
+        }
     </style>
 </head>
 <body>
@@ -253,9 +283,14 @@
                 <button id="check-button" class="control-btn" disabled title="Tipp ellenőrzése (Enter)">
                     <svg viewBox="0 0 24 24"><path d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71L9,20.42Z" /></svg>
                 </button>
-                 <button id="new-game-button" class="control-btn" title="Új játék">
+                <button id="new-game-button" class="control-btn" title="Új játék">
                     <svg viewBox="0 0 24 24"><path d="M12,5V1L7,6L12,11V8C15.31,8 18,10.69 18,14C18,17.31 15.31,20 12,20C8.69,20 6,17.31 6,14H4C4,18.42 7.58,22 12,22C16.42,22 20,18.42 20,14C20,9.58 16.42,6 12,6V5Z" /></svg>
                 </button>
+                
+                <div id="preset-area" style="display: none;">
+                    <div id="preset-row" class="guess-row"></div>
+                </div>
+
                 <button id="preset-toggle-btn" class="control-btn" title="Minta sor be/ki">
                     <svg viewBox="0 0 24 24"><path d="M16,12V4H17V2H7V4H8V12L6,14V16H11.2V22H12.8V16H18V14L16,12Z" /></svg>
                 </button>
@@ -266,10 +301,6 @@
                 <button id="info-btn" class="control-btn" title="Információ">
                     <svg viewBox="0 0 24 24"><path d="M13,9H11V7H13M13,17H11V11H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z" /></svg>
                 </button>
-            </div>
-             <div id="preset-area" style="display: none;">
-                <h4>Következő tipp mintája</h4>
-                <div id="preset-row" class="guess-row"></div>
             </div>
         </div>
     </div>
@@ -450,6 +481,7 @@
                 const { black, white } = evaluateGuess();
                 await animateFeedbackDisplay(black, white);
                 if (black === CODE_LENGTH) return endGame(true);
+
                 currentAttempt++;
                 if (currentAttempt >= MAX_ATTEMPTS) return endGame(false);
                 currentGuess = Array(CODE_LENGTH).fill(null);
@@ -486,6 +518,7 @@
                 
                 await new Promise(resolve => setTimeout(resolve, 300));
             }
+            
             function updateButtonStates(){const e=!isChecking&&!isGameOver,t=!currentGuess.includes(null);undoButton.disabled=!e||0===actionHistory.length,checkButton.disabled=!e||!t,newGameButton.disabled=isChecking}
             function updateGuessDisplay() { const rowEl = document.querySelector(`.guess-row.active`); if (!rowEl) return; const holes = rowEl.querySelectorAll('.hole'); holes.forEach((hole, index) => { const existingMarble = hole.querySelector('.marble'); const newColor = currentGuess[index]; if (!newColor && existingMarble) { hole.innerHTML = ''; } else if (newColor) { if (!existingMarble || existingMarble.dataset.color !== newColor) { hole.innerHTML = ''; const marble = document.createElement('div'); marble.className = 'marble marble-add-anim'; marble.style.background = COLORS[newColor]; marble.dataset.color = newColor; if (newColor === highlightedColor) { marble.classList.add('highlighted'); } hole.appendChild(marble); } } }); }
             function placeColor(e,t){const o=currentGuess[e];o!==t&&(actionHistory.push({index:e,previousColor:o}),currentGuess[e]=t,updateGuessDisplay(),updateButtonStates())}
@@ -522,7 +555,7 @@
             isPresetEnabled = savedPreset === 'on'; 
             presetToggleButton.classList.toggle('active', isPresetEnabled); 
             presetArea.style.display = isPresetEnabled ? 'flex' : 'none';
-
+            
             // --- ESEMÉNYKEZELŐK ---
 
             colorPalette.addEventListener('contextmenu', handleColorHighlight);
@@ -587,9 +620,8 @@
             newGameButton.addEventListener('click', newGame);
             themeToggleButton.addEventListener('click', toggleTheme);
             
-            // MÓDOSÍTVA: Külön eseménykezelő telefonos érintésre
             effectsToggleButton.addEventListener('touchend', (e) => {
-                e.preventDefault(); // Megakadályozza a dupla eseményt (touch + click)
+                e.preventDefault();
                 toggleEffects();
             });
             effectsToggleButton.addEventListener('click', toggleEffects);
