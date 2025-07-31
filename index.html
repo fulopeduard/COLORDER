@@ -174,7 +174,15 @@
             transition: all var(--anim-fast) ease-out;
             touch-action: manipulation;
         }
-        .control-btn:hover:not(:disabled) { background: var(--accent-color); transform: translateY(-2px); }
+        .control-btn:hover:not(:disabled):not(.disabled-action) { 
+            background: var(--accent-color); 
+            transform: translateY(-2px); 
+        }
+        .control-btn.disabled-action {
+            opacity: 0.5;
+            cursor: default;
+        }
+
         .control-btn svg { width: 26px; height: 26px; fill: currentColor; }
         
         .control-btn.active { background-color: var(--accent-color); box-shadow: 0 2px 4px var(--shadow-color), inset 0 0 5px rgba(0,0,0,0.2); }
@@ -323,7 +331,7 @@
                         <svg viewBox="0 0 24 24"><path d="M12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M13,7H11V13H16V11H13V7Z" /></svg>
                         <span id="timer">00:00</span>
                     </div>
-                    <button id="undo-button" class="control-btn" disabled title="Visszavonás (rövid nyomás), Új játék (hosszú nyomás)">
+                    <button id="undo-button" class="control-btn" title="Visszavonás (rövid nyomás), Új játék (hosszú nyomás)">
                         <svg viewBox="0 0 24 24"><path d="M12.5,8C9.85,8 7.45,9 5.6,10.6L2,7V16H11L7.38,12.38C8.77,11.22 10.54,10.5 12.5,10.5C16.04,10.5 19.05,12.81 20.1,16L22.47,15.22C21.08,11.03 17.15,8 12.5,8Z" /></svg>
                     </button>
                     <button id="check-button" class="control-btn" disabled title="Tipp ellenőrzése (Enter)">
@@ -416,6 +424,8 @@
             const COLOR_NAMES = Object.keys(COLORS);
             
             const yinyangIconHTML = `<span style="font-size: 1.8rem; line-height: 1;">☯</span>`;
+            const undoIconSVG = `<svg viewBox="0 0 24 24"><path d="M12.5,8C9.85,8 7.45,9 5.6,10.6L2,7V16H11L7.38,12.38C8.77,11.22 10.54,10.5 12.5,10.5C16.04,10.5 19.05,12.81 20.1,16L22.47,15.22C21.08,11.03 17.15,8 12.5,8Z" /></svg>`;
+            const restartIconSVG = `<svg viewBox="0 0 24 24"><path d="M12,5V1L7,6L12,11V8C15.31,8 18,10.69 18,14C18,17.31 15.31,20 12,20C8.69,20 6,17.31 6,14H4C4,18.42 7.58,22 12,22C16.42,22 20,18.42 20,14C20,9.58 16.42,6 12,6V5Z" /></svg>`;
 
             let secretCode = [], currentAttempt = 0, currentGuess = [], selectedHoleIndex = null;
             let actionHistory = [], isChecking = false, isGameOver = false;
@@ -460,6 +470,11 @@
 
 
             function newGame() {
+                undoButton.innerHTML = undoIconSVG;
+                undoButton.title = 'Visszavonás (rövid nyomás), Új játék (hosszú nyomás)';
+                undoButton.removeEventListener('click', newGame);
+                setupUndoButtonListeners();
+
                 isChecking = false; isGameOver = false; currentAttempt = 0;
                 currentGuess = Array(CODE_LENGTH).fill(null);
                 selectedHoleIndex = null; actionHistory = [];
@@ -488,6 +503,13 @@
                 if (isWin) { gameOverText.textContent = "Győzelem!"; document.querySelector(`.guess-row[data-row='${currentAttempt}']`).classList.add("win-row");
                 } else { gameOverText.textContent = "Vesztettél! A helyes kód:"; }
                 gameOverArea.style.display = 'flex';
+
+                removeUndoButtonListeners();
+                undoButton.innerHTML = restartIconSVG;
+                undoButton.title = 'Újrakezdés';
+                undoButton.classList.remove('disabled-action');
+                undoButton.disabled = false;
+                undoButton.addEventListener('click', newGame);
             }
 
             function formatTime(seconds) { const m = Math.floor(seconds / 60).toString().padStart(2, '0'); const s = (seconds % 60).toString().padStart(2, '0'); return `${m}:${s}`; }
@@ -516,7 +538,28 @@
                 leaderboardModal.classList.add('visible');
             }
             
-            function handleUndo() { if (isChecking || isGameOver || actionHistory.length === 0) return; const lastAction = actionHistory.pop(); const activeRow = document.querySelector('.guess-row.active'); if (!activeRow) return; const holeEl = activeRow.querySelector(`.hole[data-hole-index='${lastAction.index}']`); const marbleEl = holeEl ? holeEl.querySelector('.marble') : null; if (marbleEl && currentGuess[lastAction.index] !== null) { marbleEl.classList.add('pop-out'); setTimeout(() => { currentGuess[lastAction.index] = lastAction.previousColor; updateGuessDisplay(); selectHole(lastAction.index); updateButtonStates(); }, 200); } else { currentGuess[lastAction.index] = lastAction.previousColor; updateGuessDisplay(); selectHole(lastAction.index); updateButtonStates(); } }
+            function handleUndo() { 
+                if (actionHistory.length === 0 || isChecking || isGameOver) return; 
+                const lastAction = actionHistory.pop(); 
+                const activeRow = document.querySelector('.guess-row.active'); 
+                if (!activeRow) return; 
+                const holeEl = activeRow.querySelector(`.hole[data-hole-index='${lastAction.index}']`); 
+                const marbleEl = holeEl ? holeEl.querySelector('.marble') : null; 
+                if (marbleEl && currentGuess[lastAction.index] !== null) { 
+                    marbleEl.classList.add('pop-out'); 
+                    setTimeout(() => { 
+                        currentGuess[lastAction.index] = lastAction.previousColor; 
+                        updateGuessDisplay(); 
+                        selectHole(lastAction.index); 
+                        updateButtonStates(); 
+                    }, 200); 
+                } else { 
+                    currentGuess[lastAction.index] = lastAction.previousColor; 
+                    updateGuessDisplay(); 
+                    selectHole(lastAction.index); 
+                    updateButtonStates(); 
+                } 
+            }
             
             async function handleCheck() {
                 clearColorHighlight();
@@ -565,7 +608,13 @@
                 await new Promise(resolve => setTimeout(resolve, 300));
             }
             
-            function updateButtonStates(){const e=!isChecking&&!isGameOver,t=!currentGuess.includes(null);undoButton.disabled=!e||0===actionHistory.length,checkButton.disabled=!e||!t,newGameButton.disabled=isChecking}
+            function updateButtonStates() {
+                const canInteract = !isChecking && !isGameOver;
+                undoButton.classList.toggle('disabled-action', actionHistory.length === 0);
+                checkButton.disabled = !canInteract || currentGuess.includes(null);
+                newGameButton.disabled = isChecking;
+            }
+
             function updateGuessDisplay() { const rowEl = document.querySelector(`.guess-row.active`); if (!rowEl) return; const holes = rowEl.querySelectorAll('.hole'); holes.forEach((hole, index) => { const existingMarble = hole.querySelector('.marble'); const newColor = currentGuess[index]; if (!newColor && existingMarble) { hole.innerHTML = ''; } else if (newColor) { if (!existingMarble || existingMarble.dataset.color !== newColor) { hole.innerHTML = ''; const marble = document.createElement('div'); marble.className = 'marble marble-add-anim'; marble.style.background = COLORS[newColor]; marble.dataset.color = newColor; if (newColor === highlightedColor) { marble.classList.add('highlighted'); } hole.appendChild(marble); } } }); }
             function placeColor(e,t){const o=currentGuess[e];o!==t&&(actionHistory.push({index:e,previousColor:o}),currentGuess[e]=t,updateGuessDisplay(),updateButtonStates())}
             function selectHole(e){isGameOver||(deselectAllHoles(),selectedHoleIndex=e,document.querySelector(".guess-row.active")?.querySelector(`.hole[data-hole-index='${e}']`)?.classList.add("selected-hole"),updateButtonStates())}
@@ -595,7 +644,6 @@
                 localStorage.setItem('szinozonTheme', document.body.classList.contains('light-theme') ? 'light' : 'dark');
             }
 
-            // --- Minta sor funkciók ---
             function createPresetRow() { for (let i = 0; i < CODE_LENGTH; i++) { const hole = document.createElement('div'); hole.className = 'hole'; hole.dataset.holeIndex = i; presetRow.appendChild(hole); } }
             function updatePresetDisplay() { const holes = presetRow.querySelectorAll('.hole'); holes.forEach((hole, index) => { hole.innerHTML = ''; const color = presetGuess[index]; if (color) { const marble = document.createElement('div'); marble.className = 'marble'; marble.style.background = COLORS[color]; hole.appendChild(marble); } }); }
             
@@ -608,6 +656,24 @@
             function updatePresetAutofillUI() {
                 presetRow.classList.toggle('preset-autofill', isPresetAutofill);
                 localStorage.setItem('szinozonPresetAutofill', isPresetAutofill);
+            }
+
+            const startUndoHold = (e) => { if (e.type === 'touchstart') e.preventDefault(); if (isGameOver) return; undoHoldTimer = setTimeout(() => { if (confirm('Biztosan újra szeretnéd kezdeni a játékot?')) { newGame(); } undoHoldTimer = null; }, 800); };
+            const endUndoHold = () => { if (undoHoldTimer) { clearTimeout(undoHoldTimer); undoHoldTimer = null; handleUndo(); } };
+            const cancelUndoHold = () => { if (undoHoldTimer) { clearTimeout(undoHoldTimer); undoHoldTimer = null; } };
+            function removeUndoButtonListeners() {
+                undoButton.removeEventListener('mousedown', startUndoHold);
+                undoButton.removeEventListener('mouseup', endUndoHold);
+                undoButton.removeEventListener('mouseleave', cancelUndoHold);
+                undoButton.removeEventListener('touchstart', startUndoHold);
+                undoButton.removeEventListener('touchend', endUndoHold);
+            }
+            function setupUndoButtonListeners() {
+                undoButton.addEventListener('mousedown', startUndoHold);
+                undoButton.addEventListener('mouseup', endUndoHold);
+                undoButton.addEventListener('mouseleave', cancelUndoHold);
+                undoButton.addEventListener('touchstart', startUndoHold, { passive: false });
+                undoButton.addEventListener('touchend', endUndoHold);
             }
 
             // --- INICIALIZÁLÁS ---
@@ -701,26 +767,8 @@
                 langHuBtn.classList.remove('active');
             });
 
-            // Visszavonás gomb (rövid/hosszú nyomás)
-            const startUndoHold = (e) => {
-                if (e.type === 'touchstart') e.preventDefault();
-                if (undoButton.disabled || isGameOver) return;
-                undoHoldTimer = setTimeout(() => {
-                    if (confirm('Biztosan újra szeretnéd kezdeni a játékot?')) {
-                        newGame();
-                    }
-                    undoHoldTimer = null;
-                }, 800);
-            };
-            const endUndoHold = () => { if (undoHoldTimer) { clearTimeout(undoHoldTimer); undoHoldTimer = null; handleUndo(); } };
-            const cancelUndoHold = () => { if (undoHoldTimer) { clearTimeout(undoHoldTimer); undoHoldTimer = null; } }
-            undoButton.addEventListener('mousedown', startUndoHold);
-            undoButton.addEventListener('mouseup', endUndoHold);
-            undoButton.addEventListener('mouseleave', cancelUndoHold);
-            undoButton.addEventListener('touchstart', startUndoHold, { passive: false });
-            undoButton.addEventListener('touchend', endUndoHold);
+            setupUndoButtonListeners();
 
-            // Minta sor gomb (rövid/hosszú nyomás)
             const handlePresetShortPress = () => { isPresetVisible = !isPresetVisible; updatePresetVisibilityUI(); };
             const handlePresetLongPress = () => { if(isPresetVisible) { isPresetAutofill = !isPresetAutofill; updatePresetAutofillUI(); }};
             const startPresetHold = (e) => { if (e.type === 'touchstart') e.preventDefault(); presetHoldTimer = setTimeout(() => { presetHoldTimer = null; handlePresetLongPress(); }, 600); };
@@ -740,7 +788,7 @@
             document.addEventListener('keydown', e => {
                 if(infoModal.classList.contains('visible') || leaderboardModal.classList.contains('visible')) return;
                 if (isGameOver || isChecking) return;
-                if (e.key === 'Backspace') { e.preventDefault(); if (!undoButton.disabled) handleUndo(); return; }
+                if (e.key === 'Backspace') { e.preventDefault(); if (!undoButton.classList.contains('disabled-action')) handleUndo(); return; }
                 if (e.key === 'Enter') { e.preventDefault(); if (!checkButton.disabled) handleCheck(); return; }
                 const keyNumber = parseInt(e.key, 10);
                 if (keyNumber >= 1 && keyNumber <= COLOR_NAMES.length) {
