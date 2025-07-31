@@ -270,8 +270,6 @@
                 order: 1;
             }
 
-            /* Preset Area is now outside, media query for it is not needed here */
-
             #preset-toggle-btn,
             #settings-btn {
                 order: 3;
@@ -668,32 +666,39 @@
                 langHuBtn.classList.remove('active');
             });
 
-
-            undoButton.addEventListener('click', handleUndo);
-            
-            const cancelUndoHold = () => {
-                if (undoHoldTimer) {
-                    clearTimeout(undoHoldTimer);
-                    undoHoldTimer = null;
-                }
-            };
-            
+            // --- Visszavonás gomb eseménykezelői (rövid és hosszú lenyomásra) ---
             const startUndoHold = (e) => {
-                if(e.type === 'touchstart') e.preventDefault();
+                if (e.type === 'touchstart') e.preventDefault();
                 if (undoButton.disabled || isGameOver) return;
+                
                 undoHoldTimer = setTimeout(() => {
-                    undoHoldTimer = null;
                     if (confirm('Biztosan újra szeretnéd kezdeni a játékot?')) {
                         newGame();
                     }
+                    undoHoldTimer = null;
                 }, 800);
             };
 
+            const endUndoHold = () => {
+                if (undoHoldTimer) {
+                    clearTimeout(undoHoldTimer);
+                    undoHoldTimer = null;
+                    handleUndo();
+                }
+            };
+            
+            const cancelUndoHold = () => {
+                 if (undoHoldTimer) {
+                    clearTimeout(undoHoldTimer);
+                    undoHoldTimer = null;
+                }
+            }
+
             undoButton.addEventListener('mousedown', startUndoHold);
-            undoButton.addEventListener('mouseup', cancelUndoHold);
+            undoButton.addEventListener('mouseup', endUndoHold);
             undoButton.addEventListener('mouseleave', cancelUndoHold);
-            undoButton.addEventListener('touchstart', startUndoHold);
-            undoButton.addEventListener('touchend', cancelUndoHold);
+            undoButton.addEventListener('touchstart', startUndoHold, { passive: false });
+            undoButton.addEventListener('touchend', endUndoHold);
 
 
             checkButton.addEventListener('click', handleCheck);
