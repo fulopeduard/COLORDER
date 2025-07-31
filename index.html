@@ -152,7 +152,6 @@
         }
 
         .controls { display: flex; justify-content: center; align-items: center; gap: 10px; flex-wrap: wrap;}
-        /* MÓDOSÍTVA: Gombok érintésének javítása mobilon */
         .control-btn {
             background: var(--board-color);
             color: var(--text-color);
@@ -587,7 +586,14 @@
             checkButton.addEventListener('click', handleCheck);
             newGameButton.addEventListener('click', newGame);
             themeToggleButton.addEventListener('click', toggleTheme);
+            
+            // MÓDOSÍTVA: Külön eseménykezelő telefonos érintésre
+            effectsToggleButton.addEventListener('touchend', (e) => {
+                e.preventDefault(); // Megakadályozza a dupla eseményt (touch + click)
+                toggleEffects();
+            });
             effectsToggleButton.addEventListener('click', toggleEffects);
+
             presetToggleButton.addEventListener('click', togglePresetFeature);
 
             document.addEventListener('keydown', e => {
