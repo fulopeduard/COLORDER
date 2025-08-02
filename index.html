@@ -112,11 +112,6 @@
         .marble-add-anim { animation: dropInBounce 0.5s ease-out forwards; }
         @keyframes dropInBounce { 0% { transform: translateY(-50px) scale(0.3); opacity: 0; } 60% { transform: translateY(5px) scale(1.1); opacity: 1; } 80% { transform: translateY(-2px) scale(0.95); } 100% { transform: translateY(0) scale(1); opacity: 1; } }
         
-        #preset-row .marble {
-            pointer-events: auto;
-            cursor: pointer;
-        }
-
         .marble.pop-out { animation: popOut 0.2s ease-in forwards; }
         @keyframes popOut { from { transform: scale(1); opacity: 1; } to { transform: scale(0.3); opacity: 0; } }
 
@@ -862,6 +857,7 @@
             gameBoard.addEventListener('dragleave',e=>{const t=e.target.closest(".hole");t&&t.classList.remove("drag-over")});
             gameBoard.addEventListener('drop',e=>{e.preventDefault(),document.querySelectorAll(".drag-over").forEach((e=>e.classList.remove("drag-over")));const t=e.target.closest(".hole");t&&t.closest(".guess-row.active")&&(placeColor(parseInt(t.dataset.holeIndex),e.dataTransfer.getData("text/plain")),selectNextAvailableHole())});
             
+            // Minta sor eseménykezelők
             const handlePresetMarbleRemove = (e) => { const holeEl = e.target.closest('.hole'); if (holeEl) { const holeIndex = parseInt(holeEl.dataset.holeIndex); presetGuess[holeIndex] = null; updatePresetDisplay(); }};
             const startPresetMarbleHold = (e) => { const marbleEl = e.target.closest('#preset-row .marble'); if (!marbleEl) return; if (e.type === 'touchstart') e.preventDefault(); presetMarbleHoldTimer = setTimeout(() => { handlePresetMarbleRemove(e); if ('vibrate' in navigator) navigator.vibrate(50); }, 500); };
             const cancelPresetMarbleHold = () => { clearTimeout(presetMarbleHoldTimer); };
