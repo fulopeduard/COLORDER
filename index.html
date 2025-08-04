@@ -45,11 +45,20 @@
             transition: background-color var(--anim-fast);
         }
         
-        body.light-theme {
-            background-color: #c5cdd3;
-             background-image: linear-gradient(45deg, rgba(0,0,0,0.04) 25%, transparent 25%, transparent 75%, rgba(0,0,0,0.04) 75%),
-                               linear-gradient(45deg, rgba(0,0,0,0.04) 25%, transparent 25%, transparent 75%, rgba(0,0,0,0.04) 75%);
+        /* --- EZ A SZEKCIÓ VÁLTOZOTT --- */
+        @keyframes animated-gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
+
+        body.light-theme {
+            /* Harmonikusabb, mélyebb színek és sokkal lassabb animáció */
+            background: linear-gradient(125deg, #1e2538, #232a44, #3c2a4d, #5c2a4f);
+            background-size: 400% 400%;
+            animation: animated-gradient 40s ease-in-out infinite;
+        }
+        /* --- EDDIG TART A VÁLTOZÁS --- */
         
         body.dragging, body.dragging * { cursor: grabbing !important; }
 
@@ -417,7 +426,7 @@
                 
                 <strong>Érintés / Egér:</strong>
                 <ul>
-                    <li><strong>Szín elhelyezése (1. módszer):</strong> Koppints/kattints egy üres helyre az aktív sorban, majd egy színre a palettán.</li>
+                    <li><strong>Szín elhelyezése (1. módszer):</strong> Koppints/kattints egy színre a palettán, majd egy üres helyre az aktív sorban.</li>
                     <li><strong>Szín elhelyezése (2. módszer - Drag & Drop):</strong> Tartsd nyomva egy színen az ujjad/egérgombot, és húzd a kívánt üres helyre az aktív sorban.</li>
                     <li><strong>Szín eltávolítása:</strong> Tartsd nyomva hosszan (érintőképernyőn) vagy kattints a jobb egérgombbal egy már lerakott színre az aktív sorban, hogy eltávolítsd.</li>
                     <li><strong>Hely kijelölése:</strong> Egy egyszerű koppintás/kattintás egy üres helyre kijelöli azt, így a következő palettáról választott szín oda fog kerülni.</li>
