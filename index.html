@@ -696,7 +696,7 @@
                 updateGuessDisplay();
                 isChecking = false;
                 const newEndTime = turnTimerSeconds > 0 ? Date.now() + (turnTimerSeconds * 1000) : 0;
-                await update(ref(db, `lobbies/${lobbyId}`), { currentTurn: 1 - currentTurn, turnEndTime: newEndTime, liveGuess: Array(CODE_LENGTH).fill(null) });
+                await update(ref(db, `lobbies/${lobbyId}`), { currentTurn: 1 - currentTurn, turnEndTime: newEndTime, liveGuess: ",,," });
                 updateButtonStates();
             }
 
@@ -740,7 +740,7 @@
                     let guesses = snapshot.val() || [];
                     guesses.push({ playerIndex: myPlayerIndex, guess: [...currentGuess] });
                     const newEndTime = turnTimerSeconds > 0 ? Date.now() + (turnTimerSeconds * 1000) : 0;
-                    await update(ref(db, `lobbies/${lobbyId}`), { guesses: guesses, currentTurn: 1 - currentTurn, turnEndTime: newEndTime, liveGuess: Array(CODE_LENGTH).fill(null) });
+                    await update(ref(db, `lobbies/${lobbyId}`), { guesses: guesses, currentTurn: 1 - currentTurn, turnEndTime: newEndTime, liveGuess: ",,," });
                 } else {
                     isChecking = true;
                     updateButtonStates();
@@ -821,7 +821,7 @@
                     turnIndicator.style.display = 'none';
                 }
             }
-            function syncLiveGuess() { if (gameMode === 'multi' && currentTurn === myPlayerIndex && lobbyId) { update(ref(db, `lobbies/${lobbyId}`), { liveGuess: currentGuess }); } }
+            function syncLiveGuess() { if (gameMode === 'multi' && currentTurn === myPlayerIndex && lobbyId) { const strGuess = currentGuess.map(c => c || "").join(','); update(ref(db, `lobbies/${lobbyId}`), { liveGuess: strGuess }).catch(e => console.error(e)); } }
             function updateGuessDisplay() { const rowEl = document.querySelector(`.guess-row.active`); if (!rowEl) return; const holes = rowEl.querySelectorAll('.hole'); holes.forEach((hole, index) => { const existingMarble = hole.querySelector('.marble'); const newColor = currentGuess[index]; if (!newColor && existingMarble) { hole.innerHTML = ''; } else if (newColor) { if (!existingMarble || existingMarble.dataset.color !== newColor) { hole.innerHTML = ''; const marble = document.createElement('div'); marble.className = 'marble marble-add-anim'; marble.style.background = COLORS[newColor]; marble.dataset.color = newColor; if (newColor === highlightedColor) { marble.classList.add('highlighted'); } hole.appendChild(marble); } } }); syncLiveGuess(); }
             function placeColor(e,t){const o=currentGuess[e];o!==t&&(actionHistory.push({index:e,previousColor:o}),currentGuess[e]=t,updateGuessDisplay(),updateButtonStates())}
             function selectHole(e){isGameOver||(deselectAllHoles(),selectedHoleIndex=e,document.querySelector(".guess-row.active")?.querySelector(`.hole[data-hole-index='${e}']`)?.classList.add("selected-hole"),updateButtonStates())}
@@ -1227,8 +1227,8 @@
                     if (oldWinRow) oldWinRow.classList.remove('win-row');
                     updateButtonStates();
                 } else {
-                    if (currentTurn !== myPlayerIndex && data.liveGuess) {
-                        currentGuess = data.liveGuess;
+                    if (currentTurn !== myPlayerIndex && typeof data.liveGuess === 'string') {
+                        currentGuess = data.liveGuess.split(',').map(c => c === "" ? null : c);
                         updateGuessDisplay();
                     }
                     updateButtonStates();
