@@ -691,12 +691,13 @@
             }
             
             async function handleTimeout() {
-                const randomGuess = Array.from({length: CODE_LENGTH}, () => COLOR_NAMES[Math.floor(Math.random() * COLOR_NAMES.length)]);
-                const snapshot = await get(ref(db, `lobbies/${lobbyId}/guesses`));
-                let guesses = snapshot.val() || [];
-                guesses.push({ playerIndex: myPlayerIndex, guess: randomGuess });
+                currentGuess = Array(CODE_LENGTH).fill(null);
+                actionHistory = [];
+                updateGuessDisplay();
+                isChecking = false;
                 const newEndTime = turnTimerSeconds > 0 ? Date.now() + (turnTimerSeconds * 1000) : 0;
-                await update(ref(db, `lobbies/${lobbyId}`), { guesses: guesses, currentTurn: 1 - currentTurn, turnEndTime: newEndTime });
+                await update(ref(db, `lobbies/${lobbyId}`), { currentTurn: 1 - currentTurn, turnEndTime: newEndTime });
+                updateButtonStates();
             }
 
             function startTimer() { clearInterval(timerInterval); elapsedTime = 0; timerEl.textContent = "00:00"; timerEl.style.color = "var(--text-color)"; timerInterval = setInterval(updateTimer, 1000); }
@@ -1001,6 +1002,7 @@
             effectsToggleButton.addEventListener('click', toggleEffects);
 
             document.addEventListener('keydown', e => {
+                if (e.target.tagName.toLowerCase() === 'input') return;
                 if(infoModal.classList.contains('visible') || leaderboardModal.classList.contains('visible') || controlsModal.classList.contains('visible')) return;
                 if (isGameOver || isChecking) return;
                 if (e.key === 'Backspace') { e.preventDefault(); if (!undoButton.disabled) handleUndo(); return; }
