@@ -240,6 +240,8 @@
             box-shadow: inset 0 2px 4px var(--inset-shadow-color);
         }
         #timer-display svg { width: 20px; height: 20px; margin-right: 8px; opacity: 0.7; }
+        #timer-display.clickable { cursor: pointer; transition: transform 0.2s, background-color 0.2s; }
+        #timer-display.clickable:hover { background-color: var(--board-color); transform: scale(1.05); }
 
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(44, 62, 80, 0.85); backdrop-filter: blur(5px); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
         .modal-overlay.visible { opacity: 1; pointer-events: auto; }
@@ -379,6 +381,33 @@
                 <tbody>
                 </tbody>
             </table>
+        </div>
+    </div>
+
+    <div id="time-change-modal" class="modal-overlay">
+        <div class="modal-content">
+            <button id="close-time-change-btn" class="close-btn" title="Bezárás">&times;</button>
+            <h2>Új időkorlát javaslata</h2>
+            <p>Válassz egy új időkorlátot, amit javasolsz az ellenfelednek:</p>
+            <select id="new-time-select" style="font-size: 1rem; padding: 8px; margin-bottom: 20px; width: 100%; border-radius: 8px; background: var(--hole-color); color: var(--text-color); border: 1px solid var(--border-color);">
+                <option value="0">Időtlen</option>
+                <option value="30">30 másodperc</option>
+                <option value="60">1 perc</option>
+                <option value="120">2 perc</option>
+                <option value="300">5 perc</option>
+            </select>
+            <button id="send-time-change-btn" class="lang-btn active">Javaslat küldése</button>
+        </div>
+    </div>
+
+    <div id="accept-time-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>Új időkorlát javaslat!</h2>
+            <p id="accept-time-text" style="margin-bottom: 20px;">Az ellenfeled új időkorlátot javasolt: X perc. Elfogadod?</p>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button id="accept-time-btn" class="lang-btn active" style="background-color: var(--win-glow); border-color: var(--win-glow);">Elfogad</button>
+                <button id="decline-time-btn" class="lang-btn" style="background-color: #e74c3c; border-color: #e74c3c;">Elutasít</button>
+            </div>
         </div>
     </div>
 
@@ -554,6 +583,8 @@
             let unsubscribeLobby = null;
             let turnEndTime = 0;
             let turnTimerSeconds = 0;
+            let isPaused = false;
+            let pendingTimeChange = null;
 
             let secretCode = [], currentAttempt = 0, currentGuess = [], selectedHoleIndex = null;
             let actionHistory = [], isChecking = false, isGameOver = false;
@@ -580,8 +611,76 @@
             const solutionDisplay = document.getElementById('solution-display');
             const presetArea = document.getElementById('preset-area');
             const presetRow = document.getElementById('preset-row');
+            const timerDisplayContainer = document.getElementById('timer-display');
             const timerEl = document.getElementById('timer');
             const leaderboardBtn = document.getElementById('leaderboard-btn');
+            
+            const timeChangeModal = document.getElementById('time-change-modal');
+            const closeTimeChangeBtn = document.getElementById('close-time-change-btn');
+            const sendTimeChangeBtn = document.getElementById('send-time-change-btn');
+            const newTimeSelect = document.getElementById('new-time-select');
+            
+            const acceptTimeModal = document.getElementById('accept-time-modal');
+            const acceptTimeBtn = document.getElementById('accept-time-btn');
+            const declineTimeBtn = document.getElementById('decline-time-btn');
+            const acceptTimeText = document.getElementById('accept-time-text');
+            
+            timerDisplayContainer.addEventListener('click', () => {
+                if (gameMode !== 'multi' || isGameOver || isPaused) return;
+                timeChangeModal.classList.add('visible');
+            });
+
+            closeTimeChangeBtn.addEventListener('click', () => {
+                timeChangeModal.classList.remove('visible');
+            });
+
+            sendTimeChangeBtn.addEventListener('click', async () => {
+                if (gameMode !== 'multi' || !lobbyId) return;
+                timeChangeModal.classList.remove('visible');
+                
+                const newTime = parseInt(newTimeSelect.value);
+                const now = Date.now();
+                const remaining = turnTimerSeconds > 0 ? Math.max(0, Math.ceil((turnEndTime - now) / 1000)) : 0;
+                
+                await update(ref(db, `lobbies/${lobbyId}`), {
+                    timerChangeRequest: {
+                        requestedBy: myPlayerIndex,
+                        newTime: newTime,
+                        remainingTime: remaining
+                    }
+                });
+            });
+
+            acceptTimeBtn.addEventListener('click', async () => {
+                if (gameMode !== 'multi' || !lobbyId) return;
+                acceptTimeModal.classList.remove('visible');
+                
+                const req = pendingTimeChange;
+                if (!req) return;
+                
+                const newEndTime = req.remainingTime > 0 ? Date.now() + (req.remainingTime * 1000) : 0;
+                
+                await update(ref(db, `lobbies/${lobbyId}`), {
+                    timerChangeRequest: null,
+                    turnTimerSeconds: req.newTime,
+                    turnEndTime: newEndTime
+                });
+            });
+
+            declineTimeBtn.addEventListener('click', async () => {
+                if (gameMode !== 'multi' || !lobbyId) return;
+                acceptTimeModal.classList.remove('visible');
+                
+                const req = pendingTimeChange;
+                if (!req) return;
+                
+                const newEndTime = req.remainingTime > 0 ? Date.now() + (req.remainingTime * 1000) : 0;
+                
+                await update(ref(db, `lobbies/${lobbyId}`), {
+                    timerChangeRequest: null,
+                    turnEndTime: newEndTime
+                });
+            });
             const leaderboardModal = document.getElementById('leaderboard-modal');
             const closeLeaderboardBtn = document.getElementById('close-leaderboard-btn');
             
@@ -609,6 +708,8 @@
                     if (unsubscribeLobby) { unsubscribeLobby(); unsubscribeLobby = null; }
                     document.getElementById('waiting-room-modal').classList.remove('visible');
                 }
+                const timerDisplayContainer = document.getElementById('timer-display');
+                if (timerDisplayContainer) timerDisplayContainer.classList.remove('clickable');
 
                 // Visszaállítja a Visszavonás gombot az eredeti állapotába
                 undoButton.innerHTML = undoIconSVG;
@@ -669,6 +770,11 @@
                     elapsedTime++;
                     timerEl.textContent = formatTime(elapsedTime);
                 } else if (gameMode === 'multi') {
+                    if (isPaused && pendingTimeChange) {
+                        timerEl.textContent = pendingTimeChange.remainingTime > 0 ? formatTime(pendingTimeChange.remainingTime) : "∞";
+                        timerEl.style.color = "var(--text-color)";
+                        return;
+                    }
                     if (turnTimerSeconds === 0) {
                         timerEl.textContent = "∞";
                     } else {
@@ -682,7 +788,7 @@
                             timerEl.style.color = "var(--text-color)";
                         }
 
-                        if (remaining === 0 && currentTurn === myPlayerIndex && !isChecking && !isGameOver) {
+                        if (remaining === 0 && currentTurn === myPlayerIndex && !isChecking && !isGameOver && !isPaused) {
                             isChecking = true; 
                             handleTimeout();
                         }
@@ -788,7 +894,7 @@
             }
             
             function updateButtonStates() {
-                const isMyTurn = (gameMode === 'local') || (gameMode === 'multi' && currentTurn === myPlayerIndex);
+                const isMyTurn = (gameMode === 'local') || (gameMode === 'multi' && currentTurn === myPlayerIndex && !isPaused);
                 const e = !isChecking && !isGameOver && isMyTurn;
                 const t = !currentGuess.includes(null);
                 
@@ -1080,6 +1186,7 @@
                     lobbyId = code;
                     myPlayerIndex = 0;
                     gameMode = 'multi';
+                    document.getElementById('timer-display').classList.add('clickable');
                     document.getElementById('display-lobby-code').textContent = code;
                     waitingRoomModal.classList.add('visible');
                     
@@ -1123,6 +1230,7 @@
                             lobbyId = code;
                             myPlayerIndex = 1;
                             gameMode = 'multi';
+                            document.getElementById('timer-display').classList.add('clickable');
                             listenToLobby();
                         } else {
                             alert("A játék már elkezdődött ebben a szobában!");
@@ -1178,6 +1286,21 @@
                 currentTurn = data.currentTurn;
                 turnTimerSeconds = data.turnTimerSeconds;
                 turnEndTime = data.turnEndTime;
+                
+                if (data.timerChangeRequest) {
+                    isPaused = true;
+                    pendingTimeChange = data.timerChangeRequest;
+                    if (pendingTimeChange.requestedBy !== myPlayerIndex) {
+                        const timeText = pendingTimeChange.newTime === 0 ? "Időtlen" : (pendingTimeChange.newTime >= 60 ? (pendingTimeChange.newTime / 60) + " perc" : pendingTimeChange.newTime + " mp");
+                        acceptTimeText.textContent = `Az ellenfeled új időkorlátot javasolt: ${timeText}. Elfogadod?`;
+                        acceptTimeModal.classList.add('visible');
+                    }
+                } else {
+                    isPaused = false;
+                    pendingTimeChange = null;
+                    acceptTimeModal.classList.remove('visible');
+                    timeChangeModal.classList.remove('visible');
+                }
                 
                 const serverGuesses = data.guesses || [];
                 
