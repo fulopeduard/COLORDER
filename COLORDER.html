@@ -1067,6 +1067,12 @@
                     
                     const newSecretCode = Array.from({ length: CODE_LENGTH }, () => COLOR_NAMES[Math.floor(Math.random() * COLOR_NAMES.length)]);
                     
+                    lobbyId = code;
+                    myPlayerIndex = 0;
+                    gameMode = 'multi';
+                    document.getElementById('display-lobby-code').textContent = code;
+                    waitingRoomModal.classList.add('visible');
+                    
                     await set(ref(db, `lobbies/${code}`), {
                         status: 'waiting',
                         secretCode: newSecretCode,
@@ -1077,12 +1083,6 @@
                         winner: null,
                         hostId: auth.currentUser.uid
                     });
-                    
-                    lobbyId = code;
-                    myPlayerIndex = 0;
-                    gameMode = 'multi';
-                    document.getElementById('display-lobby-code').textContent = code;
-                    waitingRoomModal.classList.add('visible');
                     
                     listenToLobby();
                 } catch (error) {
