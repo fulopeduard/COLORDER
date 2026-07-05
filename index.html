@@ -338,9 +338,12 @@
                     </button>
                  </div>
                  <div class="controls">
-                    <div id="timer-display">
-                        <svg viewBox="0 0 24 24"><path d="M12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M13,7H11V13H16V11H13V7Z" /></svg>
-                        <span id="timer">00:00</span>
+                    <div id="timer-container" style="display: flex; flex-direction: column; align-items: center; order: 1;">
+                        <div id="turn-indicator" style="font-size: 0.8rem; height: 12px; margin-bottom: 2px; color: var(--accent-color); display: none; font-weight: 600;">Te jössz!</div>
+                        <div id="timer-display">
+                            <svg viewBox="0 0 24 24"><path d="M12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M13,7H11V13H16V11H13V7Z" /></svg>
+                            <span id="timer">00:00</span>
+                        </div>
                     </div>
                     <button id="undo-button" class="control-btn" disabled title="Visszavonás (rövid nyomás), Új játék (hosszú nyomás)">
                         <svg viewBox="0 0 24 24"><path d="M12.5,8C9.85,8 7.45,9 5.6,10.6L2,7V16H11L7.38,12.38C8.77,11.22 10.54,10.5 12.5,10.5C16.04,10.5 19.05,12.81 20.1,16L22.47,15.22C21.08,11.03 17.15,8 12.5,8Z" /></svg>
@@ -350,6 +353,9 @@
                     </button>
                     <button id="preset-toggle-btn" class="control-btn" title="Minta sor (rövid), Automatikus kitöltés (hosszú)">
                         <svg viewBox="0 0 24 24"><path d="M16,12V4H17V2H7V4H8V12L6,14V16H11.2V22H12.8V16H18V14L16,12Z" /></svg>
+                    </button>
+                    <button id="multiplayer-btn" class="control-btn" title="Többjátékos (Multiplayer)">
+                        <svg viewBox="0 0 24 24"><path d="M12,12C14.21,12 16,10.21 16,8C16,5.79 14.21,4 12,4C9.79,4 8,5.79 8,8C8,10.21 9.79,12 12,12M12,14C9.33,14 4,15.34 4,18V20H20V18C20,15.34 14.67,14 12,14Z" /></svg>
                     </button>
                     <button id="settings-btn" class="control-btn" title="Beállítások">
                         <svg viewBox="0 0 24 24"><path d="M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8M12,10A2,2 0 0,0 10,12A2,2 0 0,0 12,14A2,2 0 0,0 14,12A2,2 0 0,0 12,10M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12C22,6.5 17.5,2 12,2M19.1,4.9C19.1,4.9 19.1,4.9 19.1,4.9L20,6L18.6,6.9C19.3,8.1 19.8,9.5 19.9,11H22V13H19.9C19.8,14.5 19.3,15.9 18.6,17.1L20,18L19.1,19.1L17.7,17.7C16.5,18.5 15.1,19 13.5,19.1V21H10.5V19.1C8.9,19 7.5,18.5 6.3,17.7L4.9,19.1L4,18L5.4,17.1C4.7,15.9 4.2,14.5 4.1,13H2V11H4.1C4.2,9.5 4.7,8.1 5.4,6.9L4,6L4.9,4.9L6.3,6.3C7.5,5.5 8.9,5 10.5,4.9V3H13.5V4.9C15.1,5 16.5,5.5 17.7,6.3L19.1,4.9Z"></path></svg>
@@ -460,7 +466,66 @@
     </div>
 
 
-    <script>
+    <!-- Multiplayer Modals -->
+    <div id="multiplayer-modal" class="modal-overlay">
+        <div class="modal-content">
+            <button id="close-multiplayer-btn" class="close-btn" title="Bezárás">&times;</button>
+            <h2>Többjátékos Mód</h2>
+            <div style="margin-bottom: 20px; text-align: left;">
+                <h3 style="margin-top: 0;">Lobby Létrehozása</h3>
+                <label for="turn-timer-select" style="display:block; margin-bottom: 5px;">Köridő:</label>
+                <select id="turn-timer-select" style="padding: 8px; margin-bottom: 15px; width: 100%; border-radius: 8px; background: var(--hole-color); color: var(--text-color); border: 1px solid var(--border-color);">
+                    <option value="30">30 másodperc</option>
+                    <option value="60">1 perc</option>
+                    <option value="120">2 perc</option>
+                    <option value="300">5 perc</option>
+                    <option value="600">10 perc</option>
+                    <option value="0">Korlátlan</option>
+                </select>
+                <button id="create-lobby-btn" class="lang-btn active" style="width: 100%;">Létrehozás</button>
+            </div>
+            <hr style="border-color: var(--border-color); margin: 20px 0;">
+            <div style="text-align: left;">
+                <h3 style="margin-top: 0;">Csatlakozás Lobbyhoz</h3>
+                <input type="text" id="lobby-code-input" placeholder="Kód (pl. A1B2C)" style="padding: 10px; width: 100%; margin-bottom: 15px; text-transform: uppercase; text-align: center; font-size: 1.2rem; border-radius: 8px; background: var(--hole-color); color: var(--text-color); border: 1px solid var(--border-color); box-sizing: border-box;">
+                <button id="join-lobby-btn" class="lang-btn" style="width: 100%;">Csatlakozás</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="waiting-room-modal" class="modal-overlay">
+        <div class="modal-content">
+            <button id="close-waiting-btn" class="close-btn" title="Bezárás">&times;</button>
+            <h2>Lobby Kód: <span id="display-lobby-code" style="color: var(--accent-color); font-size: 1.8rem; letter-spacing: 2px;"></span></h2>
+            <p>Várakozás a másik játékosra...</p>
+            <div style="margin: 30px auto; border: 4px solid var(--hole-color); border-top: 4px solid var(--accent-color); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite;"></div>
+            <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getDatabase, ref, set, get, onValue, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBvJZlpmKx8ncaeLGCwf266sqRub6BBKFM",
+            authDomain: "colorder.firebaseapp.com",
+            projectId: "colorder",
+            storageBucket: "colorder.firebasestorage.app",
+            messagingSenderId: "923679862849",
+            appId: "1:923679862849:web:30c40044a55b7a7d72d6c0",
+            // Ha a Realtime Database nem az alapértelmezett amerikai szerveren van,
+            // vedd ki a kommentet a következő sor elől és írd be a helyes linket:
+            // databaseURL: "https://colorder-default-rtdb.europe-west1.firebasedatabase.app"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+        let isFirebaseReady = false;
+
+        signInAnonymously(auth).then(() => { isFirebaseReady = true; }).catch((error) => { console.error("Firebase Auth Error:", error); });
         document.addEventListener('DOMContentLoaded', () => {
             const CODE_LENGTH = 4;
             const MAX_ATTEMPTS = 11;
@@ -479,6 +544,14 @@
             const yinyangIconHTML = `<span style="font-size: 1.8rem; line-height: 1;">☯</span>`;
             const undoIconSVG = `<svg viewBox="0 0 24 24"><path d="M12.5,8C9.85,8 7.45,9 5.6,10.6L2,7V16H11L7.38,12.38C8.77,11.22 10.54,10.5 12.5,10.5C16.04,10.5 19.05,12.81 20.1,16L22.47,15.22C21.08,11.03 17.15,8 12.5,8Z" /></svg>`;
             const restartIconSVG = `<svg viewBox="0 0 24 24"><path d="M12,5V1L7,6L12,11V8C15.31,8 18,10.69 18,14C18,17.31 15.31,20 12,20C8.69,20 6,17.31 6,14H4C4,18.42 7.58,22 12,22C16.42,22 20,18.42 20,14C20,9.58 16.42,6 12,6V5Z" /></svg>`;
+
+            let gameMode = 'local';
+            let lobbyId = null;
+            let myPlayerIndex = 0;
+            let currentTurn = 0;
+            let unsubscribeLobby = null;
+            let turnEndTime = 0;
+            let turnTimerSeconds = 0;
 
             let secretCode = [], currentAttempt = 0, currentGuess = [], selectedHoleIndex = null;
             let actionHistory = [], isChecking = false, isGameOver = false;
@@ -528,6 +601,13 @@
 
 
             function newGame() {
+                if (gameMode === 'multi') {
+                    gameMode = 'local';
+                    lobbyId = null;
+                    if (unsubscribeLobby) { unsubscribeLobby(); unsubscribeLobby = null; }
+                    document.getElementById('waiting-room-modal').classList.remove('visible');
+                }
+
                 // Visszaállítja a Visszavonás gombot az eredeti állapotába
                 undoButton.innerHTML = undoIconSVG;
                 undoButton.title = 'Visszavonás (rövid nyomás), Új játék (hosszú nyomás)';
@@ -551,29 +631,73 @@
                 startTimer();
             }
 
-            function endGame(isWin) {
+            function endGame(isWin, winnerIndex = null) {
                 clearInterval(timerInterval);
-                if (isWin) {
+                if (isWin && gameMode === 'local') {
                     saveScore(currentAttempt + 1, elapsedTime);
                 }
                 clearColorHighlight(); isGameOver = true; isChecking = false;
                 deselectAllHoles(); updateButtonStates(); solutionDisplay.innerHTML = "";
                 secretCode.forEach(color => { const marble = document.createElement("div"); marble.className = "palette-color"; marble.style.background = COLORS[color]; solutionDisplay.appendChild(marble); });
-                if (isWin) { gameOverText.textContent = "Győzelem!"; document.querySelector(`.guess-row[data-row='${currentAttempt}']`).classList.add("win-row");
-                } else { gameOverText.textContent = "Vesztettél! A helyes kód:"; }
+                
+                if (isWin) { 
+                    if (gameMode === 'local') {
+                        gameOverText.textContent = "Győzelem!";
+                    } else {
+                        gameOverText.textContent = winnerIndex === myPlayerIndex ? "Győzelem!" : "Vesztettél! Az ellenfél nyert.";
+                    }
+                    document.querySelector(`.guess-row[data-row='${currentAttempt}']`).classList.add("win-row");
+                } else { 
+                    gameOverText.textContent = gameMode === 'multi' ? "Döntetlen! A kód:" : "Vesztettél! A helyes kód:"; 
+                }
                 gameOverArea.style.display = 'flex';
 
                 // Átalakítja a Visszavonás gombot Újrakezdés gombbá
                 removeUndoButtonListeners();
                 undoButton.innerHTML = restartIconSVG;
-                undoButton.title = 'Újrakezdés';
+                undoButton.title = gameMode === 'multi' ? 'Kilépés a Lobbyból' : 'Újrakezdés';
                 undoButton.addEventListener('click', newGame);
                 undoButton.disabled = false;
             }
 
             function formatTime(seconds) { const m = Math.floor(seconds / 60).toString().padStart(2, '0'); const s = (seconds % 60).toString().padStart(2, '0'); return `${m}:${s}`; }
-            function updateTimer() { elapsedTime++; timerEl.textContent = formatTime(elapsedTime); }
-            function startTimer() { clearInterval(timerInterval); elapsedTime = 0; timerEl.textContent = "00:00"; timerInterval = setInterval(updateTimer, 1000); }
+            
+            function updateTimer() {
+                if (gameMode === 'local') {
+                    elapsedTime++;
+                    timerEl.textContent = formatTime(elapsedTime);
+                } else if (gameMode === 'multi') {
+                    if (turnTimerSeconds === 0) {
+                        timerEl.textContent = "∞";
+                    } else {
+                        const now = Date.now();
+                        let remaining = Math.max(0, Math.ceil((turnEndTime - now) / 1000));
+                        timerEl.textContent = formatTime(remaining);
+                        
+                        if (currentTurn === myPlayerIndex && remaining <= 10 && remaining > 0) {
+                            timerEl.style.color = "#e74c3c";
+                        } else {
+                            timerEl.style.color = "var(--text-color)";
+                        }
+
+                        if (remaining === 0 && currentTurn === myPlayerIndex && !isChecking && !isGameOver) {
+                            isChecking = true; 
+                            handleTimeout();
+                        }
+                    }
+                }
+            }
+            
+            async function handleTimeout() {
+                const randomGuess = Array.from({length: CODE_LENGTH}, () => COLOR_NAMES[Math.floor(Math.random() * COLOR_NAMES.length)]);
+                const snapshot = await get(ref(db, `lobbies/${lobbyId}/guesses`));
+                let guesses = snapshot.val() || [];
+                guesses.push({ playerIndex: myPlayerIndex, guess: randomGuess });
+                const newEndTime = turnTimerSeconds > 0 ? Date.now() + (turnTimerSeconds * 1000) : 0;
+                await update(ref(db, `lobbies/${lobbyId}`), { guesses: guesses, currentTurn: 1 - currentTurn, turnEndTime: newEndTime });
+            }
+
+            function startTimer() { clearInterval(timerInterval); elapsedTime = 0; timerEl.textContent = "00:00"; timerEl.style.color = "var(--text-color)"; timerInterval = setInterval(updateTimer, 1000); }
             function saveScore(attempts, time) {
                 const scores = JSON.parse(localStorage.getItem('szinozonLeaderboard')) || [];
                 const newScore = { attempts, time, date: new Date().toLocaleDateString('hu-HU') };
@@ -602,20 +726,34 @@
             async function handleCheck() {
                 clearColorHighlight();
                 if (isChecking || isGameOver || currentGuess.includes(null)) return;
-                isChecking = true;
-                updateButtonStates();
-                deselectAllHoles();
-                const { black, white } = evaluateGuess();
-                await animateFeedbackDisplay(black, white);
-                if (black === CODE_LENGTH) return endGame(true);
+                
+                if (gameMode === 'multi') {
+                    if (currentTurn !== myPlayerIndex) return;
+                    isChecking = true;
+                    updateButtonStates();
+                    deselectAllHoles();
+                    
+                    const snapshot = await get(ref(db, `lobbies/${lobbyId}/guesses`));
+                    let guesses = snapshot.val() || [];
+                    guesses.push({ playerIndex: myPlayerIndex, guess: [...currentGuess] });
+                    const newEndTime = turnTimerSeconds > 0 ? Date.now() + (turnTimerSeconds * 1000) : 0;
+                    await update(ref(db, `lobbies/${lobbyId}`), { guesses: guesses, currentTurn: 1 - currentTurn, turnEndTime: newEndTime });
+                } else {
+                    isChecking = true;
+                    updateButtonStates();
+                    deselectAllHoles();
+                    const { black, white } = evaluateGuess();
+                    await animateFeedbackDisplay(black, white);
+                    if (black === CODE_LENGTH) return endGame(true);
 
-                currentAttempt++;
-                if (currentAttempt >= MAX_ATTEMPTS) return endGame(false);
-                currentGuess = Array(CODE_LENGTH).fill(null);
-                actionHistory = [];
-                updateActiveRow();
-                isChecking = false;
-                updateButtonStates();
+                    currentAttempt++;
+                    if (currentAttempt >= MAX_ATTEMPTS) return endGame(false);
+                    currentGuess = Array(CODE_LENGTH).fill(null);
+                    actionHistory = [];
+                    updateActiveRow();
+                    isChecking = false;
+                    updateButtonStates();
+                }
             }
             
             function evaluateGuess(){let e=0,t=0;const o=[...secretCode],n=[...currentGuess];for(let a=0;a<CODE_LENGTH;a++)n[a]===o[a]&&(e++,n[a]=null,o[a]=null);for(let l=0;l<CODE_LENGTH;l++)if(null!==n[l]){const s=o.indexOf(n[l]);-1!==s&&(t++,o[s]=null)}return{black:e,white:t}}
@@ -646,7 +784,35 @@
                 await new Promise(resolve => setTimeout(resolve, 300));
             }
             
-            function updateButtonStates(){const e=!isChecking&&!isGameOver,t=!currentGuess.includes(null);undoButton.disabled=isGameOver?!1:!e||0===actionHistory.length,checkButton.disabled=!e||!t,newGameButton.disabled=isChecking}
+            function updateButtonStates() {
+                const isMyTurn = (gameMode === 'local') || (gameMode === 'multi' && currentTurn === myPlayerIndex);
+                const e = !isChecking && !isGameOver && isMyTurn;
+                const t = !currentGuess.includes(null);
+                
+                undoButton.disabled = isGameOver ? false : (!e || actionHistory.length === 0);
+                checkButton.disabled = !e || !t;
+                newGameButton.disabled = isChecking;
+                
+                const activeRow = document.querySelector(".guess-row.active");
+                if (activeRow) {
+                    activeRow.style.opacity = isMyTurn ? '1' : '0.5';
+                    activeRow.style.pointerEvents = isMyTurn ? 'auto' : 'none';
+                }
+                
+                const turnIndicator = document.getElementById('turn-indicator');
+                if (gameMode === 'multi' && !isGameOver) {
+                    turnIndicator.style.display = 'block';
+                    if (isMyTurn) {
+                        turnIndicator.textContent = "Te jössz!";
+                        turnIndicator.style.color = "var(--win-glow)";
+                    } else {
+                        turnIndicator.textContent = "Ellenfél jön...";
+                        turnIndicator.style.color = "var(--accent-color)";
+                    }
+                } else {
+                    turnIndicator.style.display = 'none';
+                }
+            }
             function updateGuessDisplay() { const rowEl = document.querySelector(`.guess-row.active`); if (!rowEl) return; const holes = rowEl.querySelectorAll('.hole'); holes.forEach((hole, index) => { const existingMarble = hole.querySelector('.marble'); const newColor = currentGuess[index]; if (!newColor && existingMarble) { hole.innerHTML = ''; } else if (newColor) { if (!existingMarble || existingMarble.dataset.color !== newColor) { hole.innerHTML = ''; const marble = document.createElement('div'); marble.className = 'marble marble-add-anim'; marble.style.background = COLORS[newColor]; marble.dataset.color = newColor; if (newColor === highlightedColor) { marble.classList.add('highlighted'); } hole.appendChild(marble); } } }); }
             function placeColor(e,t){const o=currentGuess[e];o!==t&&(actionHistory.push({index:e,previousColor:o}),currentGuess[e]=t,updateGuessDisplay(),updateButtonStates())}
             function selectHole(e){isGameOver||(deselectAllHoles(),selectedHoleIndex=e,document.querySelector(".guess-row.active")?.querySelector(`.hole[data-hole-index='${e}']`)?.classList.add("selected-hole"),updateButtonStates())}
@@ -848,6 +1014,180 @@
                 }
             });
             
+            // MULTIPLAYER LOGIC
+            const multiplayerBtn = document.getElementById('multiplayer-btn');
+            const multiplayerModal = document.getElementById('multiplayer-modal');
+            const closeMultiplayerBtn = document.getElementById('close-multiplayer-btn');
+            const createLobbyBtn = document.getElementById('create-lobby-btn');
+            const joinLobbyBtn = document.getElementById('join-lobby-btn');
+            const turnTimerSelect = document.getElementById('turn-timer-select');
+            const lobbyCodeInput = document.getElementById('lobby-code-input');
+            const waitingRoomModal = document.getElementById('waiting-room-modal');
+            const closeWaitingBtn = document.getElementById('close-waiting-btn');
+
+            if (multiplayerBtn) {
+                multiplayerBtn.addEventListener('click', () => {
+                    if(!isFirebaseReady) { alert("Firebase még nincs kész. Kérlek várj vagy ellenőrizd a configot!"); return; }
+                    settingsPanel.classList.remove('visible');
+                    multiplayerModal.classList.add('visible');
+                });
+            }
+
+            closeMultiplayerBtn.addEventListener('click', () => multiplayerModal.classList.remove('visible'));
+            closeWaitingBtn.addEventListener('click', () => {
+                waitingRoomModal.classList.remove('visible');
+                newGame(); // resets multi to local
+            });
+
+            createLobbyBtn.addEventListener('click', async () => {
+                multiplayerModal.classList.remove('visible');
+                const timerVal = parseInt(turnTimerSelect.value);
+                const code = Math.random().toString(36).substring(2, 7).toUpperCase();
+                
+                const newSecretCode = Array.from({ length: CODE_LENGTH }, () => COLOR_NAMES[Math.floor(Math.random() * COLOR_NAMES.length)]);
+                
+                await set(ref(db, `lobbies/${code}`), {
+                    status: 'waiting',
+                    secretCode: newSecretCode,
+                    turnTimerSeconds: timerVal,
+                    currentTurn: 0,
+                    turnEndTime: 0,
+                    guesses: [],
+                    winner: null,
+                    hostId: auth.currentUser.uid
+                });
+                
+                lobbyId = code;
+                myPlayerIndex = 0;
+                gameMode = 'multi';
+                document.getElementById('display-lobby-code').textContent = code;
+                waitingRoomModal.classList.add('visible');
+                
+                listenToLobby();
+            });
+
+            joinLobbyBtn.addEventListener('click', async () => {
+                const code = lobbyCodeInput.value.toUpperCase().trim();
+                if(code.length !== 5) { alert("A kód 5 karakteres kell legyen!"); return; }
+                
+                const snapshot = await get(ref(db, `lobbies/${code}`));
+                if(snapshot.exists()) {
+                    const data = snapshot.val();
+                    if(data.status === 'waiting') {
+                        const newEndTime = data.turnTimerSeconds > 0 ? Date.now() + (data.turnTimerSeconds * 1000) : 0;
+                        await update(ref(db, `lobbies/${code}`), {
+                            status: 'playing',
+                            guestId: auth.currentUser.uid,
+                            turnEndTime: newEndTime
+                        });
+                        lobbyId = code;
+                        myPlayerIndex = 1;
+                        gameMode = 'multi';
+                        multiplayerModal.classList.remove('visible');
+                        listenToLobby();
+                    } else {
+                        alert("A lobby már tele van vagy befejeződött.");
+                    }
+                } else {
+                    alert("Nem található ilyen lobby.");
+                }
+            });
+
+            function listenToLobby() {
+                if(unsubscribeLobby) unsubscribeLobby();
+                unsubscribeLobby = onValue(ref(db, `lobbies/${lobbyId}`), (snapshot) => {
+                    const data = snapshot.val();
+                    if(!data) return;
+                    
+                    if(data.status === 'playing') {
+                        waitingRoomModal.classList.remove('visible');
+                        syncGameState(data);
+                    }
+                });
+            }
+
+            function rebuildBoard(serverGuesses) {
+                gameBoard.innerHTML = '';
+                createBoard();
+                
+                serverGuesses.forEach((sg, i) => {
+                    currentAttempt = i;
+                    currentGuess = sg.guess;
+                    updateGuessDisplay();
+                    
+                    const { black, white } = evaluateGuess();
+                    const rowEl = document.querySelector(`.guess-row[data-row='${i}']`);
+                    const pegEls = rowEl.querySelectorAll(".peg");
+                    const feedbackClasses = [...Array(black).fill("feedback-black"), ...Array(white).fill("feedback-white")];
+                    for (let j = 0; j < feedbackClasses.length; j++) {
+                        pegEls[j].classList.add(feedbackClasses[j]);
+                    }
+                });
+                
+                currentAttempt = serverGuesses.length;
+                currentGuess = Array(CODE_LENGTH).fill(null);
+                actionHistory = [];
+            }
+
+            async function syncGameState(data) {
+                if (gameMode !== 'multi') return;
+                secretCode = data.secretCode;
+                currentTurn = data.currentTurn;
+                turnTimerSeconds = data.turnTimerSeconds;
+                turnEndTime = data.turnEndTime;
+                
+                const serverGuesses = data.guesses || [];
+                
+                if (serverGuesses.length > currentAttempt) {
+                    if (currentAttempt === 0 && serverGuesses.length > 1) {
+                        rebuildBoard(serverGuesses.slice(0, serverGuesses.length - 1));
+                    }
+                    
+                    const latestGuess = serverGuesses[serverGuesses.length - 1];
+                    currentGuess = latestGuess.guess;
+                    updateGuessDisplay(); 
+                    
+                    isChecking = true; 
+                    updateButtonStates();
+                    
+                    const { black, white } = evaluateGuess();
+                    await animateFeedbackDisplay(black, white);
+                    
+                    if (black === CODE_LENGTH) {
+                        endGame(true, latestGuess.playerIndex);
+                        return;
+                    }
+                    
+                    currentAttempt = serverGuesses.length;
+                    if (currentAttempt >= MAX_ATTEMPTS) {
+                        endGame(false);
+                        return;
+                    }
+                    
+                    currentGuess = Array(CODE_LENGTH).fill(null);
+                    actionHistory = [];
+                    updateActiveRow();
+                    isChecking = false;
+                    updateButtonStates();
+                    
+                } else if (currentAttempt === 0 && serverGuesses.length === 0) {
+                    gameBoard.innerHTML = '';
+                    createBoard();
+                    updateActiveRow();
+                    currentAttempt = 0;
+                    currentGuess = Array(CODE_LENGTH).fill(null);
+                    actionHistory = [];
+                    isChecking = false;
+                    isGameOver = false;
+                    gameOverArea.style.display = 'none';
+                    const oldWinRow = document.querySelector('.win-row');
+                    if (oldWinRow) oldWinRow.classList.remove('win-row');
+                    updateButtonStates();
+                } else {
+                    updateButtonStates();
+                }
+            }
+
             createPalette();
             createPresetRow();
             newGame();
