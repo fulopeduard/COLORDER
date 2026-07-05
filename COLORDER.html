@@ -519,9 +519,7 @@
             storageBucket: "colorder.firebasestorage.app",
             messagingSenderId: "923679862849",
             appId: "1:923679862849:web:30c40044a55b7a7d72d6c0",
-            // Ha a Realtime Database nem az alapértelmezett amerikai szerveren van,
-            // vedd ki a kommentet a következő sor elől és írd be a helyes linket:
-            // databaseURL: "https://colorder-default-rtdb.europe-west1.firebasedatabase.app"
+            databaseURL: "https://colorder-default-rtdb.europe-west1.firebasedatabase.app"
         };
 
         const app = initializeApp(firebaseConfig);
@@ -1061,56 +1059,69 @@
             });
 
             createLobbyBtn.addEventListener('click', async () => {
-                multiplayerModal.classList.remove('visible');
-                const timerVal = parseInt(turnTimerSelect.value);
-                const code = Math.floor(10000 + Math.random() * 90000).toString();
-                
-                const newSecretCode = Array.from({ length: CODE_LENGTH }, () => COLOR_NAMES[Math.floor(Math.random() * COLOR_NAMES.length)]);
-                
-                await set(ref(db, `lobbies/${code}`), {
-                    status: 'waiting',
-                    secretCode: newSecretCode,
-                    turnTimerSeconds: timerVal,
-                    currentTurn: 0,
-                    turnEndTime: 0,
-                    guesses: [],
-                    winner: null,
-                    hostId: auth.currentUser.uid
-                });
-                
-                lobbyId = code;
-                myPlayerIndex = 0;
-                gameMode = 'multi';
-                document.getElementById('display-lobby-code').textContent = code;
-                waitingRoomModal.classList.add('visible');
-                
-                listenToLobby();
+                try {
+                    if (!auth.currentUser) throw new Error("Firebase Anonymous Auth nincs bekapcsolva vagy még tölt! Frissítsd az oldalt és várj egy kicsit.");
+                    multiplayerModal.classList.remove('visible');
+                    const timerVal = parseInt(turnTimerSelect.value);
+                    const code = Math.floor(10000 + Math.random() * 90000).toString();
+                    
+                    const newSecretCode = Array.from({ length: CODE_LENGTH }, () => COLOR_NAMES[Math.floor(Math.random() * COLOR_NAMES.length)]);
+                    
+                    await set(ref(db, `lobbies/${code}`), {
+                        status: 'waiting',
+                        secretCode: newSecretCode,
+                        turnTimerSeconds: timerVal,
+                        currentTurn: 0,
+                        turnEndTime: 0,
+                        guesses: [],
+                        winner: null,
+                        hostId: auth.currentUser.uid
+                    });
+                    
+                    lobbyId = code;
+                    myPlayerIndex = 0;
+                    gameMode = 'multi';
+                    document.getElementById('display-lobby-code').textContent = code;
+                    waitingRoomModal.classList.add('visible');
+                    
+                    listenToLobby();
+                } catch (error) {
+                    alert("Hiba a lobby létrehozásakor:\n" + error.message);
+                    console.error(error);
+                }
             });
 
             joinLobbyBtn.addEventListener('click', async () => {
-                const code = lobbyCodeInput.value.toUpperCase().trim();
-                if(code.length !== 5) { alert("A kód 5 karakteres kell legyen!"); return; }
-                
-                const snapshot = await get(ref(db, `lobbies/${code}`));
-                if(snapshot.exists()) {
-                    const data = snapshot.val();
-                    if(data.status === 'waiting') {
-                        const newEndTime = data.turnTimerSeconds > 0 ? Date.now() + (data.turnTimerSeconds * 1000) : 0;
-                        await update(ref(db, `lobbies/${code}`), {
-                            status: 'playing',
-                            guestId: auth.currentUser.uid,
-                            turnEndTime: newEndTime
-                        });
-                        lobbyId = code;
-                        myPlayerIndex = 1;
-                        gameMode = 'multi';
-                        multiplayerModal.classList.remove('visible');
-                        listenToLobby();
+                try {
+                    if (!auth.currentUser) throw new Error("Firebase Anonymous Auth nincs bekapcsolva vagy még tölt! Frissítsd az oldalt és várj egy kicsit.");
+                    const code = lobbyCodeInput.value.toUpperCase().trim();
+                    if(code.length !== 5) { alert("A kód 5 karakteres kell legyen!"); return; }
+                    
+                    const snapshot = await get(ref(db, `lobbies/${code}`));
+                    if(snapshot.exists()) {
+                        const data = snapshot.val();
+                        if(data.status === 'waiting') {
+                            const newEndTime = data.turnTimerSeconds > 0 ? Date.now() + (data.turnTimerSeconds * 1000) : 0;
+                            await update(ref(db, `lobbies/${code}`), {
+                                status: 'playing',
+                                guestId: auth.currentUser.uid,
+                                turnEndTime: newEndTime
+                            });
+                            
+                            multiplayerModal.classList.remove('visible');
+                            lobbyId = code;
+                            myPlayerIndex = 1;
+                            gameMode = 'multi';
+                            listenToLobby();
+                        } else {
+                            alert("A játék már elkezdődött ebben a szobában!");
+                        }
                     } else {
-                        alert("A lobby már tele van vagy befejeződött.");
+                        alert("Nem található ilyen kódú szoba!");
                     }
-                } else {
-                    alert("Nem található ilyen lobby.");
+                } catch (error) {
+                    alert("Hiba a csatlakozáskor:\n" + error.message);
+                    console.error(error);
                 }
             });
 
