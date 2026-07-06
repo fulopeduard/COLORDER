@@ -312,32 +312,16 @@
         <div id="game-over-area" style="display: none;">
             <h2 id="game-over-text"></h2>
             <div id="solution-display"></div>
+            <div id="opponent-won-options" style="display: none; margin-top: 15px; gap: 10px; justify-content: center;">
+                <button id="continue-playing-btn" class="control-btn" style="width: auto; padding: 0 15px; font-size: 0.9rem;">Tovább játszok</button>
+                <button id="show-solution-btn" class="control-btn" style="width: auto; padding: 0 15px; font-size: 0.9rem;">Helyes színkombináció</button>
+            </div>
         </div>
 
         <div class="board-area">
             <div id="game-board"></div>
         </div>
         
-        <div id="autoguess-player-area" style="display: none; background: var(--board-color); border: 2px solid var(--accent-color); border-radius: 10px; padding: 10px; margin: 10px 0; box-shadow: 0 4px 6px var(--shadow-color);">
-            <h3 style="text-align: center; margin: 0 0 10px 0; color: var(--text-color);">Saját tipped (<span id="ag-remaining-attempts">3</span> maradt)</h3>
-            <div id="ag-player-row" class="guess-row active" style="margin: 0 auto; justify-content: center; pointer-events: auto;">
-                <div class="guess-holes" style="margin-right: 15px;">
-                    <div class="hole" data-ag-index="0"></div>
-                    <div class="hole" data-ag-index="1"></div>
-                    <div class="hole" data-ag-index="2"></div>
-                    <div class="hole" data-ag-index="3"></div>
-                </div>
-                <button id="ag-player-check-btn" class="control-btn" style="background: var(--win-glow); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;" disabled>
-                    <svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:white;"><path d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71L9,20.42Z" /></svg>
-                </button>
-            </div>
-            <div id="ag-last-guess-container" style="display: none; justify-content: center; align-items: center; gap: 15px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-color);">
-                <span style="font-size: 0.9rem; color: var(--text-color); opacity: 0.8;">Utolsó tipped:</span>
-                <div id="ag-last-guess-marbles" style="display: flex; gap: 5px;"></div>
-                <div id="ag-player-feedback" style="display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 4px; width: 24px; height: 24px;"></div>
-            </div>
-        </div>
-
         <div class="palette-area">
             <div id="color-palette"></div>
             <div class="controls-container">
@@ -564,13 +548,6 @@
                         <option value="1">1</option>
                         <option value="2">2</option>
                         <option value="3" selected>3</option>
-                        <option value="4">4</option>
-                        <option value="5">5</option>
-                        <option value="6">6</option>
-                        <option value="7">7</option>
-                        <option value="8">8</option>
-                        <option value="9">9</option>
-                        <option value="10">10</option>
                     </select>
                 </div>
                 
@@ -660,7 +637,7 @@
             let isPaused = false;
             let pendingTimeChange = null;
 
-            let secretCode = [], currentAttempt = 0, currentGuess = [], selectedHoleIndex = null;
+            let secretCode = [], currentAttempt = 0, playerCurrentAttempt = 0, currentGuess = [], selectedHoleIndex = null;
             let actionHistory = [], isChecking = false, isGameOver = false;
             let effectsEnabled = true, effectInterval = null, highlightedColor = null;
             
@@ -669,6 +646,7 @@
             let autoGuessTimer = null;
             let maxPlayerAttempts = 3;
             let isPlayerDead = false;
+            let opponentAlreadyWon = false;
             let autoGuessSpeed = 10;
             let autoGuessDifficulty = 'medium';
             
@@ -804,7 +782,7 @@
                 undoButton.removeEventListener('click', newGame);
                 setupUndoButtonListeners();
 
-                isChecking = false; isGameOver = false; currentAttempt = 0;
+                isChecking = false; isGameOver = false; currentAttempt = 0; playerCurrentAttempt = 0; opponentAlreadyWon = false;
                 currentGuess = Array(CODE_LENGTH).fill(null);
                 selectedHoleIndex = null; actionHistory = [];
                 clearColorHighlight();
@@ -813,8 +791,7 @@
                 if (oldWinRow) oldWinRow.classList.remove('win-row');
                 presetGuess = Array(CODE_LENGTH).fill(null);
                 updatePresetDisplay();
-                const lastGuessContainer = document.getElementById('ag-last-guess-container');
-                if (lastGuessContainer) lastGuessContainer.style.display = 'none';
+
                 secretCode = Array.from({ length: CODE_LENGTH }, () => COLOR_NAMES[Math.floor(Math.random() * COLOR_NAMES.length)]);
                 gameBoard.innerHTML = '';
                 createBoard();
@@ -843,13 +820,29 @@
                     gameOverText.textContent = gameMode === 'multi' ? "Döntetlen! A kód:" : "Vesztettél! A helyes kód:"; 
                 }
                 gameOverArea.style.display = 'flex';
+                document.getElementById('solution-display').style.display = 'flex';
+                document.getElementById('opponent-won-options').style.display = 'none';
 
-                // Átalakítja a Visszavonás gombot Újrakezdés gombbá
                 removeUndoButtonListeners();
                 undoButton.innerHTML = restartIconSVG;
                 undoButton.title = gameMode === 'multi' ? 'Kilépés a Lobbyból' : 'Újrakezdés';
                 undoButton.addEventListener('click', newGame);
                 undoButton.disabled = false;
+            }
+
+            function showOpponentWonMessage() {
+                gameOverText.textContent = "Vesztettél! Az ellenfél hamarább befejezte.";
+                gameOverArea.style.display = 'flex';
+                document.getElementById('solution-display').style.display = 'none';
+                document.getElementById('opponent-won-options').style.display = 'flex';
+                
+                document.getElementById('continue-playing-btn').onclick = () => {
+                    gameOverArea.style.display = 'none';
+                };
+                document.getElementById('show-solution-btn').onclick = () => {
+                    isGameOver = true;
+                    endGame(true, 1 - myPlayerIndex);
+                };
             }
 
             function formatTime(seconds) { const m = Math.floor(seconds / 60).toString().padStart(2, '0'); const s = (seconds % 60).toString().padStart(2, '0'); return `${m}:${s}`; }
@@ -926,6 +919,67 @@
                 if (isChecking || isGameOver || currentGuess.includes(null)) return;
                 
                 if (gameMode === 'multi') {
+                    if (currentMultiMode === 'autoguess') {
+                        if (isPlayerDead) return;
+                        isChecking = true;
+                        updateButtonStates();
+                        deselectAllHoles();
+                        
+                        const { black, white } = evaluateGuess();
+                        const oldAttempt = currentAttempt;
+                        currentAttempt = playerCurrentAttempt;
+                        await animateFeedbackDisplay(black, white);
+                        currentAttempt = oldAttempt;
+                        
+                        const updateData = {};
+                        const attemptsKey = myPlayerIndex === 0 ? 'player1Attempts' : 'player2Attempts';
+                        const statusKey = myPlayerIndex === 0 ? 'player1Status' : 'player2Status';
+                        
+                        const snapshot = await get(ref(db, `lobbies/${lobbyId}/${attemptsKey}`));
+                        const currentAtt = (snapshot.exists() ? snapshot.val() : 0) + 1;
+                        updateData[attemptsKey] = currentAtt;
+                        
+                        playerCurrentAttempt++;
+                        
+                        if (black === CODE_LENGTH) {
+                            updateData[statusKey] = 'won';
+                            if (!opponentAlreadyWon) {
+                                updateData.winner = auth.currentUser.uid;
+                                updateData.status = 'finished';
+                            }
+                            endGame(true, myPlayerIndex);
+                        } else if (playerCurrentAttempt >= MAX_ATTEMPTS) {
+                            updateData[statusKey] = 'dead';
+                            isPlayerDead = true;
+                            
+                            const otherStatusKey = myPlayerIndex === 0 ? 'player2Status' : 'player1Status';
+                            const otherSnapshot = await get(ref(db, `lobbies/${lobbyId}/${otherStatusKey}`));
+                            const otherStatus = otherSnapshot.val();
+                            
+                            if (otherStatus === 'dead') {
+                                updateData.status = 'finished';
+                            }
+                            
+                            if (opponentAlreadyWon) {
+                                endGame(false);
+                            }
+                        }
+                        
+                        await update(ref(db, `lobbies/${lobbyId}`), updateData);
+                        
+                        if (!isGameOver && !isPlayerDead) {
+                            currentGuess = Array(CODE_LENGTH).fill(null);
+                            actionHistory = [];
+                            updateActiveRow();
+                            selectNextAvailableHole();
+                            isChecking = false;
+                            updateButtonStates();
+                        } else if (isPlayerDead && !isGameOver) {
+                            updateButtonStates();
+                        }
+                        return;
+                    }
+
                     if (currentTurn !== myPlayerIndex) return;
                     isChecking = true;
                     updateButtonStates();
@@ -949,6 +1003,7 @@
                     currentGuess = Array(CODE_LENGTH).fill(null);
                     actionHistory = [];
                     updateActiveRow();
+                    selectNextAvailableHole();
                     isChecking = false;
                     updateButtonStates();
                 }
@@ -968,8 +1023,8 @@
                 }))
             }
 
-            async function animateFeedbackDisplay(black, white) {
-                const rowEl = document.querySelector(`.guess-row[data-row='${currentAttempt}']`);
+            async function animateFeedbackDisplay(black, white, overrideRowEl = null) {
+                const rowEl = overrideRowEl || document.querySelector(`.guess-row[data-row='${currentAttempt}']`);
                 if (!rowEl) return;
                 
                 const pegEls = rowEl.querySelectorAll(".peg");
@@ -981,21 +1036,38 @@
                 
                 await new Promise(resolve => setTimeout(resolve, 300));
             }
+
+            async function animateSystemGuess(guessArr, rowIndex) {
+                const rowEl = document.querySelector(`.guess-row[data-row='${rowIndex}']`);
+                if (!rowEl) return;
+                
+                const partialGuess = Array(CODE_LENGTH).fill(null);
+                for (let i = 0; i < CODE_LENGTH; i++) {
+                    partialGuess[i] = guessArr[i];
+                    updateGuessDisplay(rowEl, partialGuess);
+                    await new Promise(r => setTimeout(r, 250));
+                }
+                
+                const savedCurrentGuess = [...currentGuess];
+                currentGuess = guessArr;
+                const { black, white } = evaluateGuess();
+                currentGuess = savedCurrentGuess;
+                
+                await animateFeedbackDisplay(black, white, rowEl);
+            }
             
             function getActiveHolesContainer() {
-                if (gameMode === 'multi' && currentMultiMode === 'autoguess') {
-                    return document.getElementById('ag-player-row');
-                }
                 return document.querySelector(".guess-row.active");
             }
             function getHoleDataAttr() {
-                return (gameMode === 'multi' && currentMultiMode === 'autoguess') ? 'data-ag-index' : 'data-hole-index';
+                return 'data-hole-index';
             }
 
             function updateButtonStates() {
                 if (gameMode === 'multi' && currentMultiMode === 'autoguess') {
-                    const isMyTurn = !isGameOver && !isPlayerDead && myRemainingAttempts > 0;
-                    checkButton.disabled = true;
+                    const isMyTurn = !isGameOver && !isPlayerDead && playerCurrentAttempt < MAX_ATTEMPTS;
+                    
+                    checkButton.disabled = currentGuess.includes(null) || !isMyTurn;
                     undoButton.disabled = isGameOver ? false : (!isMyTurn || actionHistory.length === 0);
                     newGameButton.disabled = false;
 
@@ -1004,15 +1076,10 @@
                         colorPaletteEl.style.opacity = isMyTurn ? '1' : '0.5';
                         colorPaletteEl.style.pointerEvents = isMyTurn ? 'auto' : 'none';
                     }
-
-                    const agCheckBtn = document.getElementById('ag-player-check-btn');
-                    if (agCheckBtn) {
-                        agCheckBtn.disabled = currentGuess.includes(null) || !isMyTurn;
-                    }
                     
                     const turnIndicator = document.getElementById('turn-indicator');
                     turnIndicator.style.display = 'block';
-                    if (isPlayerDead || myRemainingAttempts <= 0) {
+                    if (isPlayerDead || playerCurrentAttempt >= MAX_ATTEMPTS) {
                         turnIndicator.textContent = "Kiestél!";
                         turnIndicator.style.color = "#e74c3c";
                     } else {
@@ -1063,10 +1130,20 @@
             function selectNextAvailableHole(){const e=currentGuess.indexOf(null);-1!==e?selectHole(e):(deselectAllHoles(),updateButtonStates())}
             
             function updateActiveRow() { 
-                document.querySelectorAll(".guess-row.active").forEach(row => row.classList.remove('active')); 
-                const activeRow = document.querySelector(`.guess-row[data-row='${currentAttempt}']`); 
-                if (activeRow) { 
-                    activeRow.classList.add("active"); 
+                let targetAttempt = currentAttempt;
+                if (gameMode === 'multi' && currentMultiMode === 'autoguess') {
+                    targetAttempt = playerCurrentAttempt;
+                }
+                
+                const currentActiveRow = document.querySelector(".guess-row.active");
+                const newActiveRow = document.querySelector(`.guess-row[data-row='${targetAttempt}']`);
+                
+                if (currentActiveRow === newActiveRow) return;
+                
+                if (currentActiveRow) currentActiveRow.classList.remove('active');
+                
+                if (newActiveRow) { 
+                    newActiveRow.classList.add("active"); 
                     if (isPresetVisible && isPresetAutofill) {
                         currentGuess = [...presetGuess]; 
                         updateGuessDisplay(); 
@@ -1234,75 +1311,6 @@
             checkButton.addEventListener('click', handleCheck);
             newGameButton.addEventListener('click', newGame);
             
-            const agCheckBtn = document.getElementById('ag-player-check-btn');
-            if (agCheckBtn) {
-                agCheckBtn.addEventListener('click', async () => {
-                    if (gameMode !== 'multi' || currentMultiMode !== 'autoguess') return;
-                    if (currentGuess.includes(null) || isGameOver || isPlayerDead) return;
-                    
-                    const { black, white } = evaluateGuess();
-                    
-                    const feedbackArea = document.getElementById('ag-player-feedback');
-                    feedbackArea.innerHTML = '';
-                    const feedbackClasses = [...Array(black).fill("feedback-black"), ...Array(white).fill("feedback-white")];
-                    feedbackClasses.forEach(cls => {
-                        const peg = document.createElement('div');
-                        peg.className = `peg ${cls}`;
-                        feedbackArea.appendChild(peg);
-                    });
-                    
-                    const lastGuessMarbles = document.getElementById('ag-last-guess-marbles');
-                    lastGuessMarbles.innerHTML = '';
-                    currentGuess.forEach(color => {
-                        const marble = document.createElement('div');
-                        marble.className = 'marble';
-                        marble.style.width = '24px';
-                        marble.style.height = '24px';
-                        marble.style.background = COLORS[color];
-                        lastGuessMarbles.appendChild(marble);
-                    });
-                    document.getElementById('ag-last-guess-container').style.display = 'flex';
-                    
-                    myRemainingAttempts--;
-                    document.getElementById('ag-remaining-attempts').textContent = myRemainingAttempts;
-                    
-                    const updateData = {};
-                    const attemptsKey = myPlayerIndex === 0 ? 'player1Attempts' : 'player2Attempts';
-                    const statusKey = myPlayerIndex === 0 ? 'player1Status' : 'player2Status';
-                    
-                    const snapshot = await get(ref(db, `lobbies/${lobbyId}/${attemptsKey}`));
-                    const currentAtt = (snapshot.exists() ? snapshot.val() : 0) + 1;
-                    updateData[attemptsKey] = currentAtt;
-                    
-                    if (black === CODE_LENGTH) {
-                        updateData[statusKey] = 'won';
-                        updateData.winner = auth.currentUser.uid;
-                        updateData.status = 'finished';
-                        endGame(true, myPlayerIndex);
-                    } else if (myRemainingAttempts <= 0) {
-                        updateData[statusKey] = 'dead';
-                        isPlayerDead = true;
-                        
-                        const otherStatusKey = myPlayerIndex === 0 ? 'player2Status' : 'player1Status';
-                        const otherSnapshot = await get(ref(db, `lobbies/${lobbyId}/${otherStatusKey}`));
-                        const otherStatus = otherSnapshot.val();
-                        
-                        if (otherStatus === 'dead') {
-                            updateData.status = 'finished';
-                        }
-                    }
-                    
-                    await update(ref(db, `lobbies/${lobbyId}`), updateData);
-                    
-                    if (!isGameOver && !isPlayerDead) {
-                        currentGuess = Array(CODE_LENGTH).fill(null);
-                        updateGuessDisplay();
-                        updateButtonStates();
-                    } else if (isPlayerDead && !isGameOver) {
-                        updateButtonStates();
-                    }
-                });
-            }
             themeToggleButton.addEventListener('click', toggleTheme);
             effectsToggleButton.addEventListener('click', toggleEffects);
 
@@ -1495,9 +1503,6 @@
             function rebuildBoard(serverGuesses) {
                 const savedCurrentGuess = [...currentGuess];
                 
-                gameBoard.innerHTML = '';
-                createBoard();
-                
                 serverGuesses.forEach((sg, i) => {
                     const rowEl = document.querySelector(`.guess-row[data-row='${i}']`);
                     updateGuessDisplay(rowEl, sg.guess);
@@ -1526,52 +1531,60 @@
                 currentMultiMode = data.gameModeType || 'switch';
                 secretCode = data.secretCode;
                 
-                const agPlayerArea = document.getElementById('autoguess-player-area');
                 if (currentMultiMode === 'autoguess') {
-                    agPlayerArea.style.display = 'block';
                     autoGuessSpeed = data.autoGuessSpeed || 10;
                     autoGuessDifficulty = data.difficulty || 'medium';
-                    maxPlayerAttempts = data.maxPlayerAttempts || 3;
+                    maxPlayerAttempts = parseInt(data.maxPlayerAttempts) || 3;
                     
                     const p1Att = data.player1Attempts || 0;
                     const p2Att = data.player2Attempts || 0;
                     const p1Status = data.player1Status || 'playing';
                     const p2Status = data.player2Status || 'waiting';
                     
-                    myRemainingAttempts = maxPlayerAttempts - (myPlayerIndex === 0 ? p1Att : p2Att);
+                    const myAttempts = myPlayerIndex === 0 ? p1Att : p2Att;
+                    playerCurrentAttempt = (MAX_ATTEMPTS - maxPlayerAttempts) + myAttempts;
+                    updateActiveRow();
                     isPlayerDead = (myPlayerIndex === 0 ? p1Status : p2Status) === 'dead';
-                    document.getElementById('ag-remaining-attempts').textContent = myRemainingAttempts;
                     
                     if (data.status === 'playing' && !data.winner) {
                         const systemGuesses = data.systemGuesses || [];
-                        if (myPlayerIndex === 0 && !autoGuessTimer && systemGuesses.length < 10) {
+                        const maxSystemGuesses = MAX_ATTEMPTS - maxPlayerAttempts;
+                        if (myPlayerIndex === 0 && !autoGuessTimer && systemGuesses.length < maxSystemGuesses) {
                             autoGuessTimer = setInterval(() => {
                                 generateAndPushSystemGuess();
                             }, autoGuessSpeed * 1000);
-                        } else if (systemGuesses.length >= 10 && autoGuessTimer) {
+                        } else if (systemGuesses.length >= maxSystemGuesses && autoGuessTimer) {
                             clearInterval(autoGuessTimer);
                             autoGuessTimer = null;
                         }
                         
                         if (systemGuesses.length > currentAttempt) {
-                            rebuildBoard(systemGuesses);
+                            if (currentAttempt === 0 && systemGuesses.length > 1) {
+                                rebuildBoard(systemGuesses.slice(0, systemGuesses.length - 1));
+                            }
+                            const latestGuess = systemGuesses[systemGuesses.length - 1];
+                            currentAttempt = systemGuesses.length;
+                            animateSystemGuess(latestGuess.guess, systemGuesses.length - 1);
                         }
                     } else if (data.status === 'finished') {
                         if (autoGuessTimer) { clearInterval(autoGuessTimer); autoGuessTimer = null; }
-                        isGameOver = true;
-                        if (data.winner) {
-                            endGame(true, data.winner === auth.currentUser.uid ? myPlayerIndex : 1 - myPlayerIndex);
-                        } else {
-                            endGame(false);
+                        
+                        if (data.winner && data.winner !== auth.currentUser.uid && !opponentAlreadyWon) {
+                            opponentAlreadyWon = true;
+                            showOpponentWonMessage();
+                        } else if (!opponentAlreadyWon || isGameOver) {
+                            isGameOver = true;
+                            if (data.winner) {
+                                endGame(true, data.winner === auth.currentUser.uid ? myPlayerIndex : 1 - myPlayerIndex);
+                            } else {
+                                endGame(false);
+                            }
                         }
                     }
                     
                     updateButtonStates();
                     return;
-                } else {
-                    agPlayerArea.style.display = 'none';
                 }
-
                 currentTurn = data.currentTurn;
                 turnTimerSeconds = data.turnTimerSeconds;
                 turnEndTime = data.turnEndTime;
@@ -1622,6 +1635,7 @@
                     currentGuess = Array(CODE_LENGTH).fill(null);
                     actionHistory = [];
                     updateActiveRow();
+                    selectNextAvailableHole();
                     isChecking = false;
                     updateButtonStates();
                     
@@ -1640,8 +1654,7 @@
                     gameOverArea.style.display = 'none';
                     const oldWinRow = document.querySelector('.win-row');
                     if (oldWinRow) oldWinRow.classList.remove('win-row');
-                    const lastGuessContainer = document.getElementById('ag-last-guess-container');
-                    if (lastGuessContainer) lastGuessContainer.style.display = 'none';
+
                     updateButtonStates();
                 } else {
                     if (currentTurn !== myPlayerIndex && typeof data.liveGuess === 'string') {
@@ -1657,7 +1670,7 @@
                 
                 const snapshot = await get(ref(db, `lobbies/${lobbyId}/systemGuesses`));
                 let systemGuesses = snapshot.val() || [];
-                if (systemGuesses.length >= 10) return;
+                if (systemGuesses.length >= (MAX_ATTEMPTS - maxPlayerAttempts)) return;
                 
                 let nextGuess = [];
                 const step = systemGuesses.length;
@@ -1711,4 +1724,3 @@
     </script>
 </body>
 </html>
-
