@@ -312,10 +312,6 @@
         <div id="game-over-area" style="display: none;">
             <h2 id="game-over-text"></h2>
             <div id="solution-display"></div>
-            <div id="opponent-won-options" style="display: none; margin-top: 15px; gap: 10px; justify-content: center;">
-                <button id="continue-playing-btn" class="control-btn" style="width: auto; padding: 0 15px; font-size: 0.9rem;">Tovább játszok</button>
-                <button id="show-solution-btn" class="control-btn" style="width: auto; padding: 0 15px; font-size: 0.9rem;">Helyes színkombináció</button>
-            </div>
         </div>
 
         <div class="board-area">
@@ -408,9 +404,21 @@
         <div class="modal-content">
             <h2>Új időkorlát javaslat!</h2>
             <p id="accept-time-text" style="margin-bottom: 20px;">Az ellenfeled új időkorlátot javasolt: X perc. Elfogadod?</p>
-            <div style="display: flex; gap: 10px; justify-content: center;">
-                <button id="accept-time-btn" class="lang-btn active" style="background-color: var(--win-glow); border-color: var(--win-glow);">Elfogad</button>
-                <button id="decline-time-btn" class="lang-btn" style="background-color: #e74c3c; border-color: #e74c3c;">Elutasít</button>
+            <div style="display: flex; gap: 10px; justify-content: space-between;">
+                <button id="accept-time-btn" class="menu-btn" style="flex: 1;">Elfogad</button>
+                <button id="decline-time-btn" class="menu-btn" style="flex: 1; background-color: var(--accent-color);">Elutasít</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Opponent Won Modal -->
+    <div id="opponent-won-modal" class="modal-overlay">
+        <div class="modal-content" style="text-align: center;">
+            <h2>Vesztettél!</h2>
+            <p>Az ellenfél hamarább fejezte be a játékot.</p>
+            <div style="display: flex; gap: 10px; flex-direction: column; justify-content: center; margin-top: 20px;">
+                <button id="modal-continue-btn" class="menu-btn">Tovább játszok</button>
+                <button id="modal-show-solution-btn" class="menu-btn">Helyes színkombináció mutatása</button>
             </div>
         </div>
     </div>
@@ -813,7 +821,11 @@
                     if (gameMode === 'local') {
                         gameOverText.textContent = "Győzelem!";
                     } else {
-                        gameOverText.textContent = winnerIndex === myPlayerIndex ? "Győzelem!" : "Vesztettél! Az ellenfél nyert.";
+                        if (winnerIndex === myPlayerIndex) {
+                            gameOverText.textContent = opponentAlreadyWon ? "Megfejtetted, de az ellenfél gyorsabb volt!" : "Győzelem!";
+                        } else {
+                            gameOverText.textContent = "Vesztettél! Az ellenfél nyert.";
+                        }
                     }
                     
                     let winRowIndex = currentAttempt;
@@ -842,7 +854,6 @@
                 }
                 gameOverArea.style.display = 'flex';
                 document.getElementById('solution-display').style.display = 'flex';
-                document.getElementById('opponent-won-options').style.display = 'none';
                 gameOverArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
                 removeUndoButtonListeners();
@@ -853,16 +864,14 @@
             }
 
             function showOpponentWonMessage() {
-                gameOverText.textContent = "Vesztettél! Az ellenfél hamarább befejezte.";
-                gameOverArea.style.display = 'flex';
-                document.getElementById('solution-display').style.display = 'none';
-                document.getElementById('opponent-won-options').style.display = 'flex';
-                gameOverArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                const modal = document.getElementById('opponent-won-modal');
+                modal.classList.add('visible');
                 
-                document.getElementById('continue-playing-btn').onclick = () => {
-                    gameOverArea.style.display = 'none';
+                document.getElementById('modal-continue-btn').onclick = () => {
+                    modal.classList.remove('visible');
                 };
-                document.getElementById('show-solution-btn').onclick = () => {
+                document.getElementById('modal-show-solution-btn').onclick = () => {
+                    modal.classList.remove('visible');
                     isGameOver = true;
                     endGame(true, 1 - myPlayerIndex);
                 };
