@@ -968,6 +968,7 @@
                             updateData[statusKey] = 'won';
                             if (!opponentAlreadyWon) {
                                 updateData.winner = auth.currentUser.uid;
+                                updateData.winnerIndex = myPlayerIndex;
                                 updateData.status = 'finished';
                             }
                             endGame(true, myPlayerIndex);
@@ -1592,13 +1593,14 @@
                     } else if (data.status === 'finished') {
                         if (autoGuessTimer) { clearInterval(autoGuessTimer); autoGuessTimer = null; }
                         
-                        if (data.winner && data.winner !== auth.currentUser.uid && !opponentAlreadyWon) {
+                        if (data.winner && (data.winnerIndex !== undefined ? data.winnerIndex !== myPlayerIndex : data.winner !== auth.currentUser.uid) && !opponentAlreadyWon) {
                             opponentAlreadyWon = true;
                             showOpponentWonMessage();
                         } else if (!opponentAlreadyWon || isGameOver) {
                             isGameOver = true;
                             if (data.winner) {
-                                endGame(true, data.winner === auth.currentUser.uid ? myPlayerIndex : 1 - myPlayerIndex);
+                                const winnerIdx = data.winnerIndex !== undefined ? data.winnerIndex : (data.winner === auth.currentUser.uid ? myPlayerIndex : 1 - myPlayerIndex);
+                                endGame(true, winnerIdx);
                             } else {
                                 endGame(false);
                             }
