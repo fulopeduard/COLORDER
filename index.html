@@ -815,13 +815,35 @@
                     } else {
                         gameOverText.textContent = winnerIndex === myPlayerIndex ? "Győzelem!" : "Vesztettél! Az ellenfél nyert.";
                     }
-                    document.querySelector(`.guess-row[data-row='${currentAttempt}']`).classList.add("win-row");
+                    
+                    let winRowIndex = currentAttempt;
+                    if (gameMode === 'local') {
+                        winRowIndex = currentAttempt;
+                    } else if (gameMode === 'multi' && currentMultiMode === 'autoguess') {
+                        if (winnerIndex === myPlayerIndex) {
+                            winRowIndex = playerCurrentAttempt - 1;
+                        } else {
+                            winRowIndex = -1;
+                        }
+                    } else if (gameMode === 'multi' && currentMultiMode === 'switch') {
+                        if (winnerIndex === myPlayerIndex) {
+                            winRowIndex = currentAttempt - 1;
+                        } else {
+                            winRowIndex = -1;
+                        }
+                    }
+                    
+                    if (winRowIndex >= 0) {
+                        const winRowEl = document.querySelector(`.guess-row[data-row='${winRowIndex}']`);
+                        if (winRowEl) winRowEl.classList.add("win-row");
+                    }
                 } else { 
                     gameOverText.textContent = gameMode === 'multi' ? "Döntetlen! A kód:" : "Vesztettél! A helyes kód:"; 
                 }
                 gameOverArea.style.display = 'flex';
                 document.getElementById('solution-display').style.display = 'flex';
                 document.getElementById('opponent-won-options').style.display = 'none';
+                gameOverArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
                 removeUndoButtonListeners();
                 undoButton.innerHTML = restartIconSVG;
@@ -835,6 +857,7 @@
                 gameOverArea.style.display = 'flex';
                 document.getElementById('solution-display').style.display = 'none';
                 document.getElementById('opponent-won-options').style.display = 'flex';
+                gameOverArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 
                 document.getElementById('continue-playing-btn').onclick = () => {
                     gameOverArea.style.display = 'none';
