@@ -685,6 +685,19 @@
         </div>
     </div>
 
+    <div id="settings-modal" class="modal-overlay">
+        <div class="modal-content" style="text-align: center;">
+            <button id="close-settings-modal-btn" class="close-btn" title="Bezárás">&times;</button>
+            <h2>Beállítások</h2>
+            <div style="display: flex; flex-direction: column; gap: 15px; justify-content: center; margin-top: 25px;">
+                <button id="menu-controls-btn" class="main-menu-btn">Irányítás</button>
+                <button id="menu-effects-toggle-btn" class="main-menu-btn">Effektek be/ki</button>
+                <button id="menu-theme-toggle-btn" class="main-menu-btn">Téma váltása</button>
+                <button id="menu-info-btn" class="main-menu-btn">Információ</button>
+            </div>
+        </div>
+    </div>
+
     <div id="waiting-room-modal" class="modal-overlay">
         <div class="modal-content">
             <button id="close-waiting-btn" class="close-btn" title="Bezárás">&times;</button>
@@ -1490,8 +1503,33 @@
                 multiplayerMenuContainer.style.display = 'flex';
             });
             
+            const settingsModal = document.getElementById('settings-modal');
+            const closeSettingsModalBtn = document.getElementById('close-settings-modal-btn');
+            
             document.getElementById('menu-settings-btn').addEventListener('click', () => {
-                document.getElementById('settings-modal').classList.add('visible');
+                settingsModal.classList.add('visible');
+            });
+            
+            closeSettingsModalBtn.addEventListener('click', () => {
+                settingsModal.classList.remove('visible');
+            });
+
+            document.getElementById('menu-controls-btn').addEventListener('click', () => {
+                settingsModal.classList.remove('visible');
+                document.getElementById('controls-modal').classList.add('visible');
+            });
+
+            document.getElementById('menu-info-btn').addEventListener('click', () => {
+                settingsModal.classList.remove('visible');
+                document.getElementById('info-modal').classList.add('visible');
+            });
+
+            document.getElementById('menu-effects-toggle-btn').addEventListener('click', () => {
+                toggleEffects();
+            });
+
+            document.getElementById('menu-theme-toggle-btn').addEventListener('click', () => {
+                toggleTheme();
             });
             
             const exitConfirmModal = document.getElementById('exit-confirm-modal');
