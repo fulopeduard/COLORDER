@@ -317,6 +317,22 @@
         <div class="board-area">
             <div id="game-board"></div>
         </div>
+        
+        <div id="autoguess-player-area" style="display: none; background: var(--board-color); border: 2px solid var(--accent-color); border-radius: 10px; padding: 10px; margin: 10px 0; box-shadow: 0 4px 6px var(--shadow-color);">
+            <h3 style="text-align: center; margin: 0 0 10px 0; color: var(--text-color);">Saját tipped (<span id="ag-remaining-attempts">3</span> maradt)</h3>
+            <div id="ag-player-row" class="guess-row active" style="margin: 0 auto; justify-content: center; pointer-events: auto;">
+                <div class="guess-holes" style="margin-right: 15px;">
+                    <div class="hole" data-ag-index="0"></div>
+                    <div class="hole" data-ag-index="1"></div>
+                    <div class="hole" data-ag-index="2"></div>
+                    <div class="hole" data-ag-index="3"></div>
+                </div>
+                <button id="ag-player-check-btn" class="control-btn" style="background: var(--win-glow); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;" disabled>
+                    <svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:white;"><path d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71L9,20.42Z" /></svg>
+                </button>
+            </div>
+            <div id="ag-player-feedback" style="display: flex; justify-content: center; gap: 5px; margin-top: 10px; min-height: 20px;"></div>
+        </div>
 
         <div class="palette-area">
             <div id="color-palette"></div>
@@ -502,15 +518,58 @@
             <h2>Többjátékos Mód</h2>
             <div style="margin-bottom: 20px; text-align: left;">
                 <h3 style="margin-top: 0;">Lobby Létrehozása</h3>
-                <label for="turn-timer-select" style="display:block; margin-bottom: 5px;">Köridő:</label>
-                <select id="turn-timer-select" style="padding: 8px; margin-bottom: 15px; width: 100%; border-radius: 8px; background: var(--hole-color); color: var(--text-color); border: 1px solid var(--border-color);">
-                    <option value="30">30 másodperc</option>
-                    <option value="60">1 perc</option>
-                    <option value="120">2 perc</option>
-                    <option value="300">5 perc</option>
-                    <option value="600">10 perc</option>
-                    <option value="0">Korlátlan</option>
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                    <label for="game-mode-select">Játékmód:</label>
+                    <button id="mode-info-btn" style="background: none; border: none; color: var(--accent-color); cursor: pointer; padding: 0;">(i)</button>
+                </div>
+                <select id="game-mode-select" style="padding: 8px; margin-bottom: 15px; width: 100%; border-radius: 8px; background: var(--hole-color); color: var(--text-color); border: 1px solid var(--border-color);">
+                    <option value="switch">Switch & Guess</option>
+                    <option value="autoguess">Auto-Guess Racing</option>
                 </select>
+
+                <div id="switch-guess-settings">
+                    <label for="turn-timer-select" style="display:block; margin-bottom: 5px;">Köridő:</label>
+                    <select id="turn-timer-select" style="padding: 8px; margin-bottom: 15px; width: 100%; border-radius: 8px; background: var(--hole-color); color: var(--text-color); border: 1px solid var(--border-color);">
+                        <option value="30">30 másodperc</option>
+                        <option value="60">1 perc</option>
+                        <option value="120">2 perc</option>
+                        <option value="300">5 perc</option>
+                        <option value="600">10 perc</option>
+                        <option value="0">Korlátlan</option>
+                    </select>
+                </div>
+                
+                <div id="autoguess-settings" style="display: none;">
+                    <label for="autoguess-speed" style="display:block; margin-bottom: 5px;">Gépi sebesség:</label>
+                    <select id="autoguess-speed" style="padding: 8px; margin-bottom: 15px; width: 100%; border-radius: 8px; background: var(--hole-color); color: var(--text-color); border: 1px solid var(--border-color);">
+                        <option value="5">Gyors (5 mp/sor)</option>
+                        <option value="10">Közepes (10 mp/sor)</option>
+                        <option value="15">Lassú (15 mp/sor)</option>
+                    </select>
+
+                    <label for="autoguess-difficulty" style="display:block; margin-bottom: 5px;">Gép nehézsége:</label>
+                    <select id="autoguess-difficulty" style="padding: 8px; margin-bottom: 15px; width: 100%; border-radius: 8px; background: var(--hole-color); color: var(--text-color); border: 1px solid var(--border-color);">
+                        <option value="easy">Könnyű (Optimális)</option>
+                        <option value="medium">Közepes (Átlagos)</option>
+                        <option value="hard">Nehéz (Véletlenszerű)</option>
+                    </select>
+
+                    <label for="autoguess-attempts" style="display:block; margin-bottom: 5px;">Saját tippek száma:</label>
+                    <select id="autoguess-attempts" style="padding: 8px; margin-bottom: 15px; width: 100%; border-radius: 8px; background: var(--hole-color); color: var(--text-color); border: 1px solid var(--border-color);">
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3" selected>3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="6">6</option>
+                        <option value="7">7</option>
+                        <option value="8">8</option>
+                        <option value="9">9</option>
+                        <option value="10">10</option>
+                    </select>
+                </div>
+                
                 <button id="create-lobby-btn" class="lang-btn active" style="width: 100%;">Létrehozás</button>
             </div>
             <hr style="border-color: var(--border-color); margin: 20px 0;">
@@ -518,6 +577,17 @@
                 <h3 style="margin-top: 0;">Csatlakozás Lobbyhoz</h3>
                 <input type="text" inputmode="numeric" pattern="[0-9]*" id="lobby-code-input" placeholder="Kód (pl. 12345)" maxlength="5" style="padding: 10px; width: 100%; margin-bottom: 15px; text-transform: uppercase; text-align: center; font-size: 1.2rem; border-radius: 8px; background: var(--hole-color); color: var(--text-color); border: 1px solid var(--border-color); box-sizing: border-box;">
                 <button id="join-lobby-btn" class="lang-btn" style="width: 100%;">Csatlakozás</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="mode-info-modal" class="modal-overlay">
+        <div class="modal-content">
+            <button id="close-mode-info-btn" class="close-btn" title="Bezárás">&times;</button>
+            <h2>Játékmódok</h2>
+            <div class="info-text">
+                <p><strong>Switch & Guess:</strong> Egymás ellen játszotok egy közös táblán. Felváltva tesztek le egy-egy sort, és aki végül megfejti a kódot, az nyer.</p>
+                <p><strong>Auto-Guess Racing:</strong> A számítógép magától elkezd tippelni a közös táblán. Nektek az a feladatotok, hogy a gép tippjei alapján, saját magatoknak tippeljetek. Az nyer, aki hamarabb kitalálja a kódot, mielőtt elfogyna a próbálkozása, vagy mielőtt az ellenfele kitalálná!</p>
             </div>
         </div>
     </div>
@@ -589,6 +659,14 @@
             let secretCode = [], currentAttempt = 0, currentGuess = [], selectedHoleIndex = null;
             let actionHistory = [], isChecking = false, isGameOver = false;
             let effectsEnabled = true, effectInterval = null, highlightedColor = null;
+            
+            let currentMultiMode = 'switch';
+            let myRemainingAttempts = 3;
+            let autoGuessTimer = null;
+            let maxPlayerAttempts = 3;
+            let isPlayerDead = false;
+            let autoGuessSpeed = 10;
+            let autoGuessDifficulty = 'medium';
             
             let isPresetVisible = false;
             let isPresetAutofill = false;
@@ -898,7 +976,46 @@
                 await new Promise(resolve => setTimeout(resolve, 300));
             }
             
+            function getActiveHolesContainer() {
+                if (gameMode === 'multi' && currentMultiMode === 'autoguess') {
+                    return document.getElementById('ag-player-row');
+                }
+                return document.querySelector(".guess-row.active");
+            }
+            function getHoleDataAttr() {
+                return (gameMode === 'multi' && currentMultiMode === 'autoguess') ? 'data-ag-index' : 'data-hole-index';
+            }
+
             function updateButtonStates() {
+                if (gameMode === 'multi' && currentMultiMode === 'autoguess') {
+                    const isMyTurn = !isGameOver && !isPlayerDead && myRemainingAttempts > 0;
+                    checkButton.disabled = true;
+                    undoButton.disabled = isGameOver ? false : (!isMyTurn || actionHistory.length === 0);
+                    newGameButton.disabled = false;
+
+                    const colorPaletteEl = document.getElementById("color-palette");
+                    if (colorPaletteEl) {
+                        colorPaletteEl.style.opacity = isMyTurn ? '1' : '0.5';
+                        colorPaletteEl.style.pointerEvents = isMyTurn ? 'auto' : 'none';
+                    }
+
+                    const agCheckBtn = document.getElementById('ag-player-check-btn');
+                    if (agCheckBtn) {
+                        agCheckBtn.disabled = currentGuess.includes(null) || !isMyTurn;
+                    }
+                    
+                    const turnIndicator = document.getElementById('turn-indicator');
+                    turnIndicator.style.display = 'block';
+                    if (isPlayerDead || myRemainingAttempts <= 0) {
+                        turnIndicator.textContent = "Kiestél!";
+                        turnIndicator.style.color = "#e74c3c";
+                    } else {
+                        turnIndicator.textContent = "Tippelj te is!";
+                        turnIndicator.style.color = "var(--win-glow)";
+                    }
+                    return;
+                }
+
                 const isMyTurn = (gameMode === 'local') || (gameMode === 'multi' && currentTurn === myPlayerIndex && !isPaused);
                 const e = !isChecking && !isGameOver && isMyTurn;
                 const t = !currentGuess.includes(null);
@@ -932,10 +1049,10 @@
                     turnIndicator.style.display = 'none';
                 }
             }
-            function syncLiveGuess() { if (gameMode === 'multi' && currentTurn === myPlayerIndex && lobbyId) { const strGuess = currentGuess.map(c => c || "").join(','); update(ref(db, `lobbies/${lobbyId}`), { liveGuess: strGuess }).catch(e => console.error(e)); } }
-            function updateGuessDisplay() { const rowEl = document.querySelector(`.guess-row.active`); if (!rowEl) return; const holes = rowEl.querySelectorAll('.hole'); holes.forEach((hole, index) => { const existingMarble = hole.querySelector('.marble'); const newColor = currentGuess[index]; if (!newColor && existingMarble) { hole.innerHTML = ''; } else if (newColor) { if (!existingMarble || existingMarble.dataset.color !== newColor) { hole.innerHTML = ''; const marble = document.createElement('div'); marble.className = 'marble marble-add-anim'; marble.style.background = COLORS[newColor]; marble.dataset.color = newColor; if (newColor === highlightedColor) { marble.classList.add('highlighted'); } hole.appendChild(marble); } } }); syncLiveGuess(); }
+            function syncLiveGuess() { if (gameMode === 'multi' && currentTurn === myPlayerIndex && lobbyId && currentMultiMode === 'switch') { const strGuess = currentGuess.map(c => c || "").join(','); update(ref(db, `lobbies/${lobbyId}`), { liveGuess: strGuess }).catch(e => console.error(e)); } }
+            function updateGuessDisplay() { const rowEl = getActiveHolesContainer(); if (!rowEl) return; const attr = getHoleDataAttr(); const holes = rowEl.querySelectorAll('.hole'); holes.forEach((hole, index) => { const existingMarble = hole.querySelector('.marble'); const newColor = currentGuess[index]; if (!newColor && existingMarble) { hole.innerHTML = ''; } else if (newColor) { if (!existingMarble || existingMarble.dataset.color !== newColor) { hole.innerHTML = ''; const marble = document.createElement('div'); marble.className = 'marble marble-add-anim'; marble.style.background = COLORS[newColor]; marble.dataset.color = newColor; if (newColor === highlightedColor) { marble.classList.add('highlighted'); } hole.appendChild(marble); } } }); syncLiveGuess(); }
             function placeColor(e,t){const o=currentGuess[e];o!==t&&(actionHistory.push({index:e,previousColor:o}),currentGuess[e]=t,updateGuessDisplay(),updateButtonStates())}
-            function selectHole(e){isGameOver||(deselectAllHoles(),selectedHoleIndex=e,document.querySelector(".guess-row.active")?.querySelector(`.hole[data-hole-index='${e}']`)?.classList.add("selected-hole"),updateButtonStates())}
+            function selectHole(e){isGameOver||(deselectAllHoles(),selectedHoleIndex=e,getActiveHolesContainer()?.querySelector(`.hole[${getHoleDataAttr()}='${e}']`)?.classList.add("selected-hole"),updateButtonStates())}
             function deselectAllHoles(){document.querySelectorAll(".hole.selected-hole").forEach((e=>e.classList.remove("selected-hole"))),selectedHoleIndex=null}
             function selectNextAvailableHole(){const e=currentGuess.indexOf(null);-1!==e?selectHole(e):(deselectAllHoles(),updateButtonStates())}
             
@@ -1110,6 +1227,64 @@
 
             checkButton.addEventListener('click', handleCheck);
             newGameButton.addEventListener('click', newGame);
+            
+            const agCheckBtn = document.getElementById('ag-player-check-btn');
+            if (agCheckBtn) {
+                agCheckBtn.addEventListener('click', async () => {
+                    if (gameMode !== 'multi' || currentMultiMode !== 'autoguess') return;
+                    if (currentGuess.includes(null) || isGameOver || isPlayerDead) return;
+                    
+                    const { black, white } = evaluateGuess();
+                    
+                    const feedbackArea = document.getElementById('ag-player-feedback');
+                    feedbackArea.innerHTML = '';
+                    const feedbackClasses = [...Array(black).fill("feedback-black"), ...Array(white).fill("feedback-white")];
+                    feedbackClasses.forEach(cls => {
+                        const peg = document.createElement('div');
+                        peg.className = `peg ${cls}`;
+                        feedbackArea.appendChild(peg);
+                    });
+                    
+                    myRemainingAttempts--;
+                    document.getElementById('ag-remaining-attempts').textContent = myRemainingAttempts;
+                    
+                    const updateData = {};
+                    const attemptsKey = myPlayerIndex === 0 ? 'player1Attempts' : 'player2Attempts';
+                    const statusKey = myPlayerIndex === 0 ? 'player1Status' : 'player2Status';
+                    
+                    const snapshot = await get(ref(db, `lobbies/${lobbyId}/${attemptsKey}`));
+                    const currentAtt = (snapshot.exists() ? snapshot.val() : 0) + 1;
+                    updateData[attemptsKey] = currentAtt;
+                    
+                    if (black === CODE_LENGTH) {
+                        updateData[statusKey] = 'won';
+                        updateData.winner = auth.currentUser.uid;
+                        updateData.status = 'finished';
+                        endGame(true, myPlayerIndex);
+                    } else if (myRemainingAttempts <= 0) {
+                        updateData[statusKey] = 'dead';
+                        isPlayerDead = true;
+                        
+                        const otherStatusKey = myPlayerIndex === 0 ? 'player2Status' : 'player1Status';
+                        const otherSnapshot = await get(ref(db, `lobbies/${lobbyId}/${otherStatusKey}`));
+                        const otherStatus = otherSnapshot.val();
+                        
+                        if (otherStatus === 'dead') {
+                            updateData.status = 'finished';
+                        }
+                    }
+                    
+                    await update(ref(db, `lobbies/${lobbyId}`), updateData);
+                    
+                    if (!isGameOver && !isPlayerDead) {
+                        currentGuess = Array(CODE_LENGTH).fill(null);
+                        updateGuessDisplay();
+                        updateButtonStates();
+                    } else if (isPlayerDead && !isGameOver) {
+                        updateButtonStates();
+                    }
+                });
+            }
             themeToggleButton.addEventListener('click', toggleTheme);
             effectsToggleButton.addEventListener('click', toggleEffects);
 
@@ -1142,6 +1317,30 @@
             const createLobbyBtn = document.getElementById('create-lobby-btn');
             const joinLobbyBtn = document.getElementById('join-lobby-btn');
             const turnTimerSelect = document.getElementById('turn-timer-select');
+            
+            const gameModeSelect = document.getElementById('game-mode-select');
+            const switchGuessSettings = document.getElementById('switch-guess-settings');
+            const autoguessSettings = document.getElementById('autoguess-settings');
+            const modeInfoBtn = document.getElementById('mode-info-btn');
+            const modeInfoModal = document.getElementById('mode-info-modal');
+            const closeModeInfoBtn = document.getElementById('close-mode-info-btn');
+
+            gameModeSelect.addEventListener('change', (e) => {
+                if (e.target.value === 'switch') {
+                    switchGuessSettings.style.display = 'block';
+                    autoguessSettings.style.display = 'none';
+                } else {
+                    switchGuessSettings.style.display = 'none';
+                    autoguessSettings.style.display = 'block';
+                }
+            });
+
+            modeInfoBtn.addEventListener('click', () => {
+                modeInfoModal.classList.add('visible');
+            });
+            closeModeInfoBtn.addEventListener('click', () => {
+                modeInfoModal.classList.remove('visible');
+            });
             const lobbyCodeInput = document.getElementById('lobby-code-input');
             const waitingRoomModal = document.getElementById('waiting-room-modal');
             const closeWaitingBtn = document.getElementById('close-waiting-btn');
@@ -1181,11 +1380,8 @@
                 try {
                     if (!auth.currentUser) throw new Error("Firebase Anonymous Auth nincs bekapcsolva vagy még tölt! Frissítsd az oldalt és várj egy kicsit.");
                     multiplayerModal.classList.remove('visible');
-                    const timerVal = parseInt(turnTimerSelect.value);
                     const code = Math.floor(10000 + Math.random() * 90000).toString();
-                    
                     newGame();
-                    
                     const newSecretCode = Array.from({ length: CODE_LENGTH }, () => COLOR_NAMES[Math.floor(Math.random() * COLOR_NAMES.length)]);
                     
                     lobbyId = code;
@@ -1195,16 +1391,32 @@
                     document.getElementById('display-lobby-code').textContent = code;
                     waitingRoomModal.classList.add('visible');
                     
-                    await set(ref(db, `lobbies/${code}`), {
+                    const selectedGameMode = gameModeSelect.value;
+                    let lobbyData = {
                         status: 'waiting',
                         secretCode: newSecretCode,
-                        turnTimerSeconds: timerVal,
-                        currentTurn: 0,
-                        turnEndTime: 0,
+                        gameModeType: selectedGameMode,
                         guesses: [],
                         winner: null,
                         hostId: auth.currentUser.uid
-                    });
+                    };
+
+                    if (selectedGameMode === 'switch') {
+                        lobbyData.turnTimerSeconds = parseInt(turnTimerSelect.value);
+                        lobbyData.currentTurn = 0;
+                        lobbyData.turnEndTime = 0;
+                    } else {
+                        lobbyData.autoGuessSpeed = parseInt(document.getElementById('autoguess-speed').value);
+                        lobbyData.difficulty = document.getElementById('autoguess-difficulty').value;
+                        lobbyData.maxPlayerAttempts = parseInt(document.getElementById('autoguess-attempts').value);
+                        lobbyData.player1Attempts = 0;
+                        lobbyData.player2Attempts = 0;
+                        lobbyData.player1Status = 'playing';
+                        lobbyData.player2Status = 'waiting';
+                        lobbyData.systemGuesses = [];
+                    }
+                    
+                    await set(ref(db, `lobbies/${code}`), lobbyData);
                     
                     listenToLobby();
                 } catch (error) {
@@ -1287,7 +1499,55 @@
 
             async function syncGameState(data) {
                 if (gameMode !== 'multi') return;
+                currentMultiMode = data.gameModeType || 'switch';
                 secretCode = data.secretCode;
+                
+                const agPlayerArea = document.getElementById('autoguess-player-area');
+                if (currentMultiMode === 'autoguess') {
+                    agPlayerArea.style.display = 'block';
+                    autoGuessSpeed = data.autoGuessSpeed || 10;
+                    autoGuessDifficulty = data.difficulty || 'medium';
+                    maxPlayerAttempts = data.maxPlayerAttempts || 3;
+                    
+                    const p1Att = data.player1Attempts || 0;
+                    const p2Att = data.player2Attempts || 0;
+                    const p1Status = data.player1Status || 'playing';
+                    const p2Status = data.player2Status || 'waiting';
+                    
+                    myRemainingAttempts = maxPlayerAttempts - (myPlayerIndex === 0 ? p1Att : p2Att);
+                    isPlayerDead = (myPlayerIndex === 0 ? p1Status : p2Status) === 'dead';
+                    document.getElementById('ag-remaining-attempts').textContent = myRemainingAttempts;
+                    
+                    if (data.status === 'playing' && !data.winner) {
+                        const systemGuesses = data.systemGuesses || [];
+                        if (myPlayerIndex === 0 && !autoGuessTimer && systemGuesses.length < 10) {
+                            autoGuessTimer = setInterval(() => {
+                                generateAndPushSystemGuess();
+                            }, autoGuessSpeed * 1000);
+                        } else if (systemGuesses.length >= 10 && autoGuessTimer) {
+                            clearInterval(autoGuessTimer);
+                            autoGuessTimer = null;
+                        }
+                        
+                        if (systemGuesses.length > currentAttempt) {
+                            rebuildBoard(systemGuesses);
+                        }
+                    } else if (data.status === 'finished') {
+                        if (autoGuessTimer) { clearInterval(autoGuessTimer); autoGuessTimer = null; }
+                        isGameOver = true;
+                        if (data.winner) {
+                            endGame(true, data.winner === auth.currentUser.uid ? myPlayerIndex : 1 - myPlayerIndex);
+                        } else {
+                            endGame(false);
+                        }
+                    }
+                    
+                    updateButtonStates();
+                    return;
+                } else {
+                    agPlayerArea.style.display = 'none';
+                }
+
                 currentTurn = data.currentTurn;
                 turnTimerSeconds = data.turnTimerSeconds;
                 turnEndTime = data.turnEndTime;
@@ -1364,6 +1624,35 @@
                     }
                     updateButtonStates();
                 }
+            }
+
+            async function generateAndPushSystemGuess() {
+                if (gameMode !== 'multi' || currentMultiMode !== 'autoguess' || !lobbyId || isGameOver) return;
+                
+                const snapshot = await get(ref(db, `lobbies/${lobbyId}/systemGuesses`));
+                let systemGuesses = snapshot.val() || [];
+                if (systemGuesses.length >= 10) return;
+                
+                let nextGuess = [];
+                if (autoGuessDifficulty === 'hard') {
+                    nextGuess = Array.from({ length: CODE_LENGTH }, () => COLOR_NAMES[Math.floor(Math.random() * COLOR_NAMES.length)]);
+                } else if (autoGuessDifficulty === 'medium') {
+                    if (systemGuesses.length < COLOR_NAMES.length) {
+                        nextGuess = Array(CODE_LENGTH).fill(COLOR_NAMES[systemGuesses.length]);
+                    } else {
+                        nextGuess = Array.from({ length: CODE_LENGTH }, () => COLOR_NAMES[Math.floor(Math.random() * COLOR_NAMES.length)]);
+                    }
+                } else {
+                    nextGuess = Array.from({ length: CODE_LENGTH }, () => COLOR_NAMES[Math.floor(Math.random() * COLOR_NAMES.length)]);
+                    const correctCount = Math.min(CODE_LENGTH, Math.floor(systemGuesses.length / 2));
+                    for (let i = 0; i < correctCount; i++) {
+                        nextGuess[i] = secretCode[i];
+                    }
+                    nextGuess.sort(() => Math.random() - 0.5);
+                }
+                
+                systemGuesses.push({ guess: nextGuess });
+                await update(ref(db, `lobbies/${lobbyId}`), { systemGuesses: systemGuesses });
             }
 
             createPalette();
