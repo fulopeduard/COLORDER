@@ -331,7 +331,11 @@
                     <svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:white;"><path d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71L9,20.42Z" /></svg>
                 </button>
             </div>
-            <div id="ag-player-feedback" style="display: flex; justify-content: center; gap: 5px; margin-top: 10px; min-height: 20px;"></div>
+            <div id="ag-last-guess-container" style="display: none; justify-content: center; align-items: center; gap: 15px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-color);">
+                <span style="font-size: 0.9rem; color: var(--text-color); opacity: 0.8;">Utolsó tipped:</span>
+                <div id="ag-last-guess-marbles" style="display: flex; gap: 5px;"></div>
+                <div id="ag-player-feedback" style="display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 4px; width: 24px; height: 24px;"></div>
+            </div>
         </div>
 
         <div class="palette-area">
@@ -809,6 +813,8 @@
                 if (oldWinRow) oldWinRow.classList.remove('win-row');
                 presetGuess = Array(CODE_LENGTH).fill(null);
                 updatePresetDisplay();
+                const lastGuessContainer = document.getElementById('ag-last-guess-container');
+                if (lastGuessContainer) lastGuessContainer.style.display = 'none';
                 secretCode = Array.from({ length: CODE_LENGTH }, () => COLOR_NAMES[Math.floor(Math.random() * COLOR_NAMES.length)]);
                 gameBoard.innerHTML = '';
                 createBoard();
@@ -1245,6 +1251,18 @@
                         feedbackArea.appendChild(peg);
                     });
                     
+                    const lastGuessMarbles = document.getElementById('ag-last-guess-marbles');
+                    lastGuessMarbles.innerHTML = '';
+                    currentGuess.forEach(color => {
+                        const marble = document.createElement('div');
+                        marble.className = 'marble';
+                        marble.style.width = '24px';
+                        marble.style.height = '24px';
+                        marble.style.background = COLORS[color];
+                        lastGuessMarbles.appendChild(marble);
+                    });
+                    document.getElementById('ag-last-guess-container').style.display = 'flex';
+                    
                     myRemainingAttempts--;
                     document.getElementById('ag-remaining-attempts').textContent = myRemainingAttempts;
                     
@@ -1622,6 +1640,8 @@
                     gameOverArea.style.display = 'none';
                     const oldWinRow = document.querySelector('.win-row');
                     if (oldWinRow) oldWinRow.classList.remove('win-row');
+                    const lastGuessContainer = document.getElementById('ag-last-guess-container');
+                    if (lastGuessContainer) lastGuessContainer.style.display = 'none';
                     updateButtonStates();
                 } else {
                     if (currentTurn !== myPlayerIndex && typeof data.liveGuess === 'string') {
@@ -1649,9 +1669,9 @@
                 } else {
                     let correctCount = 0;
                     if (autoGuessDifficulty === 'easy') {
-                        correctCount = Math.min(CODE_LENGTH, Math.floor((step - 1) / 2));
+                        correctCount = Math.min(CODE_LENGTH - 1, Math.floor((step - 1) / 2));
                     } else if (autoGuessDifficulty === 'medium') {
-                        correctCount = Math.min(CODE_LENGTH, Math.floor((step - 1) / 3));
+                        correctCount = Math.min(CODE_LENGTH - 1, Math.floor((step - 1) / 3));
                     } else {
                         correctCount = 0;
                     }
@@ -1670,6 +1690,14 @@
                         let randomColor = COLOR_NAMES[Math.floor(Math.random() * COLOR_NAMES.length)];
                         nextGuess[pos] = randomColor;
                     }
+                }
+                
+                if (nextGuess.join(',') === secretCode.join(',')) {
+                    let newColor = nextGuess[0];
+                    while (newColor === nextGuess[0]) {
+                        newColor = COLOR_NAMES[Math.floor(Math.random() * COLOR_NAMES.length)];
+                    }
+                    nextGuess[0] = newColor;
                 }
                 
                 systemGuesses.push({ guess: nextGuess });
