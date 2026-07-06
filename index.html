@@ -1647,22 +1647,29 @@
                 } else if (step === 1) {
                     nextGuess = [...COLOR_NAMES.slice(4, 8)].sort(() => Math.random() - 0.5);
                 } else {
-                    nextGuess = Array.from({ length: CODE_LENGTH }, () => COLOR_NAMES[Math.floor(Math.random() * COLOR_NAMES.length)]);
-                    
                     let correctCount = 0;
                     if (autoGuessDifficulty === 'easy') {
-                        correctCount = Math.min(CODE_LENGTH, Math.floor((step - 1) / 2)); 
+                        correctCount = Math.min(CODE_LENGTH, Math.floor((step - 1) / 2));
                     } else if (autoGuessDifficulty === 'medium') {
-                        correctCount = Math.max(0, Math.min(CODE_LENGTH, Math.floor((step - 3) / 2)));
-                    } else if (autoGuessDifficulty === 'hard') {
-                        correctCount = Math.max(0, Math.min(CODE_LENGTH, Math.floor((step - 5) / 2)));
+                        correctCount = Math.min(CODE_LENGTH, Math.floor((step - 1) / 3));
+                    } else {
+                        correctCount = 0;
                     }
+                    
+                    nextGuess = Array(CODE_LENGTH).fill(null);
+                    const availableIndices = [0, 1, 2, 3];
                     
                     for (let i = 0; i < correctCount; i++) {
-                        nextGuess[i] = secretCode[i];
+                        const randomIdx = Math.floor(Math.random() * availableIndices.length);
+                        const pos = availableIndices.splice(randomIdx, 1)[0];
+                        nextGuess[pos] = secretCode[pos];
                     }
                     
-                    nextGuess.sort(() => Math.random() - 0.5);
+                    for (let i = 0; i < availableIndices.length; i++) {
+                        const pos = availableIndices[i];
+                        let randomColor = COLOR_NAMES[Math.floor(Math.random() * COLOR_NAMES.length)];
+                        nextGuess[pos] = randomColor;
+                    }
                 }
                 
                 systemGuesses.push({ guess: nextGuess });
