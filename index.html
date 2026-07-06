@@ -243,6 +243,83 @@
         #timer-display.clickable { cursor: pointer; transition: transform 0.2s, background-color 0.2s; }
         #timer-display.clickable:hover { background-color: var(--board-color); transform: scale(1.05); }
 
+        /* --- MAIN MENU STYLES --- */
+        #main-menu-container, #multiplayer-menu-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            max-width: 400px;
+            gap: 20px;
+            background-color: var(--board-color);
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px var(--shadow-color);
+            position: relative;
+        }
+        
+        .game-title {
+            font-size: 2.5rem;
+            color: var(--accent-color);
+            margin: 0 0 20px 0;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            letter-spacing: 2px;
+        }
+        
+        .main-menu-btn {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-color);
+            background-color: var(--hole-color);
+            border: 2px solid transparent;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all var(--anim-fast);
+        }
+        
+        .main-menu-btn:hover {
+            transform: scale(1.05);
+            background-color: #3e566f;
+            border-color: var(--accent-color);
+            box-shadow: 0 4px 10px rgba(52, 152, 219, 0.3);
+        }
+        
+        .version-number {
+            position: absolute;
+            bottom: 10px;
+            right: 15px;
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.3);
+        }
+        
+        .menu-back-btn {
+            background-color: transparent;
+            color: rgba(255,255,255,0.5);
+            border: none;
+            cursor: pointer;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            text-decoration: underline;
+            transition: color var(--anim-fast);
+        }
+        .menu-back-btn:hover { color: var(--text-color); }
+        
+        .game-nav-back {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: none;
+            border: none;
+            color: var(--text-color);
+            opacity: 0.5;
+            cursor: pointer;
+            transition: opacity var(--anim-fast), transform var(--anim-fast);
+        }
+        .game-nav-back:hover { opacity: 1; transform: scale(1.1); }
+
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(44, 62, 80, 0.85); backdrop-filter: blur(5px); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
         .modal-overlay.visible { opacity: 1; pointer-events: auto; }
         
@@ -273,6 +350,10 @@
         .lang-btn { padding: 8px 16px; border: 2px solid transparent; background-color: var(--hole-color); color: var(--text-color); border-radius: 20px; cursor: pointer; font-weight: 600; transition: all var(--anim-fast); }
         .lang-btn:hover { background-color: #3e566f; }
         .lang-btn.active { border-color: var(--accent-color); background-color: var(--accent-color); }
+        .button-group { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 15px; }
+        .toggle-btn { flex: 1; padding: 8px 10px; border: 2px solid transparent; background-color: var(--hole-color); color: var(--text-color); border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: all var(--anim-fast); text-align: center; }
+        .toggle-btn:hover { background-color: #3e566f; }
+        .toggle-btn.active { border-color: var(--accent-color); background-color: var(--accent-color); color: white; }
         .info-text { text-align: left; line-height: 1.7; }
         .info-text strong { color: var(--accent-color); }
         .info-text .icon-example {
@@ -308,7 +389,19 @@
 </head>
 <body>
 
-    <div class="game-container">
+    <!-- MAIN MENU -->
+    <div id="main-menu-container">
+        <h1 class="game-title">COLORDER</h1>
+        
+        <button id="menu-singleplayer-btn" class="main-menu-btn">Singleplayer</button>
+        <button id="menu-multiplayer-btn" class="main-menu-btn">Multiplayer</button>
+        <button id="menu-settings-btn" class="main-menu-btn">Settings</button>
+        
+        <div class="version-number">v0.69</div>
+    </div>
+
+    <!-- GAME CONTAINER -->
+    <div class="game-container" id="game-container" style="display: none;">
         <div id="game-over-area" style="display: none;">
             <h2 id="game-over-text"></h2>
             <div id="solution-display"></div>
@@ -338,11 +431,11 @@
                     <button id="info-btn" class="control-btn" title="Információ">
                         <svg viewBox="0 0 24 24"><path d="M13,9H11V7H13M13,17H11V11H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z" /></svg>
                     </button>
-                    <button id="multiplayer-btn" class="control-btn" title="Többjátékos (Multiplayer)">
-                        <svg viewBox="0 0 24 24"><path d="M12,12C14.21,12 16,10.21 16,8C16,5.79 14.21,4 12,4C9.79,4 8,5.79 8,8C8,10.21 9.79,12 12,12M12,14C9.33,14 4,15.34 4,18V20H20V18C20,15.34 14.67,14 12,14Z" /></svg>
+                    <button id="nav-back-to-menu-btn" class="control-btn" title="Vissza a főmenübe">
+                        <svg viewBox="0 0 24 24"><path d="M21,11H6.83L10.41,7.41L9,6L3,12L9,18L10.41,16.59L6.83,13H21V11Z"/></svg>
                     </button>
                  </div>
-                 <div class="controls">
+                 <div class="controls" id="game-controls" style="display: none;">
                     <div id="timer-container" style="display: flex; flex-direction: column; align-items: center; order: 1;">
                         <div id="turn-indicator" style="font-size: 0.8rem; height: 12px; margin-bottom: 2px; color: var(--accent-color); display: none; font-weight: 600;">Te jössz!</div>
                         <div id="timer-display">
@@ -507,67 +600,67 @@
     </div>
 
 
-    <!-- Multiplayer Modals -->
-    <div id="multiplayer-modal" class="modal-overlay">
-        <div class="modal-content">
-            <button id="close-multiplayer-btn" class="close-btn" title="Bezárás">&times;</button>
-            <h2>Többjátékos Mód</h2>
-            <div style="margin-bottom: 20px; text-align: left;">
-                <h3 style="margin-top: 0;">Lobby Létrehozása</h3>
-                
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                    <label for="game-mode-select">Játékmód:</label>
-                    <button id="mode-info-btn" style="background: none; border: none; color: var(--accent-color); cursor: pointer; padding: 0;">(i)</button>
-                </div>
-                <select id="game-mode-select" style="padding: 8px; margin-bottom: 15px; width: 100%; border-radius: 8px; background: var(--hole-color); color: var(--text-color); border: 1px solid var(--border-color);">
-                    <option value="switch">Switch & Guess</option>
-                    <option value="autoguess">Auto-Guess Racing</option>
-                </select>
-
-                <div id="switch-guess-settings">
-                    <label for="turn-timer-select" style="display:block; margin-bottom: 5px;">Köridő:</label>
-                    <select id="turn-timer-select" style="padding: 8px; margin-bottom: 15px; width: 100%; border-radius: 8px; background: var(--hole-color); color: var(--text-color); border: 1px solid var(--border-color);">
-                        <option value="30">30 másodperc</option>
-                        <option value="60">1 perc</option>
-                        <option value="120">2 perc</option>
-                        <option value="300">5 perc</option>
-                        <option value="600">10 perc</option>
-                        <option value="0">Korlátlan</option>
-                    </select>
-                </div>
-                
-                <div id="autoguess-settings" style="display: none;">
-                    <label for="autoguess-speed" style="display:block; margin-bottom: 5px;">Gépi sebesség:</label>
-                    <select id="autoguess-speed" style="padding: 8px; margin-bottom: 15px; width: 100%; border-radius: 8px; background: var(--hole-color); color: var(--text-color); border: 1px solid var(--border-color);">
-                        <option value="5">Gyors (5 mp/sor)</option>
-                        <option value="10">Közepes (10 mp/sor)</option>
-                        <option value="15">Lassú (15 mp/sor)</option>
-                    </select>
-
-                    <label for="autoguess-difficulty" style="display:block; margin-bottom: 5px;">Gép nehézsége:</label>
-                    <select id="autoguess-difficulty" style="padding: 8px; margin-bottom: 15px; width: 100%; border-radius: 8px; background: var(--hole-color); color: var(--text-color); border: 1px solid var(--border-color);">
-                        <option value="easy">Könnyű (Optimális)</option>
-                        <option value="medium">Közepes (Átlagos)</option>
-                        <option value="hard">Nehéz (Véletlenszerű)</option>
-                    </select>
-
-                    <label for="autoguess-attempts" style="display:block; margin-bottom: 5px;">Saját tippek száma:</label>
-                    <select id="autoguess-attempts" style="padding: 8px; margin-bottom: 15px; width: 100%; border-radius: 8px; background: var(--hole-color); color: var(--text-color); border: 1px solid var(--border-color);">
-                        <option value="1">1</option>
-                        <option value="2">2</option>
-                        <option value="3" selected>3</option>
-                    </select>
-                </div>
-                
-                <button id="create-lobby-btn" class="lang-btn active" style="width: 100%;">Létrehozás</button>
+    <!-- Multiplayer Menu -->
+    <div id="multiplayer-menu-container" style="display: none;">
+        <h2 class="game-title" style="font-size: 2rem; margin-bottom: 10px;">Többjátékos Mód</h2>
+        
+        <div style="width: 100%; text-align: left;">
+            <h3 style="margin-top: 0;">Lobby Létrehozása</h3>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                <label for="game-mode-select">Játékmód:</label>
+                <button id="mode-info-btn" style="background: none; border: none; color: var(--accent-color); cursor: pointer; padding: 0;">(i)</button>
             </div>
-            <hr style="border-color: var(--border-color); margin: 20px 0;">
-            <div style="text-align: left;">
-                <h3 style="margin-top: 0;">Csatlakozás Lobbyhoz</h3>
-                <input type="text" inputmode="numeric" pattern="[0-9]*" id="lobby-code-input" placeholder="Kód (pl. 12345)" maxlength="5" style="padding: 10px; width: 100%; margin-bottom: 15px; text-transform: uppercase; text-align: center; font-size: 1.2rem; border-radius: 8px; background: var(--hole-color); color: var(--text-color); border: 1px solid var(--border-color); box-sizing: border-box;">
-                <button id="join-lobby-btn" class="lang-btn" style="width: 100%;">Csatlakozás</button>
+            <div class="button-group" id="game-mode-group">
+                <button class="toggle-btn active" data-value="switch">Switch & Guess</button>
+                <button class="toggle-btn" data-value="autoguess">Auto-Guess Racing</button>
             </div>
+
+            <div id="switch-guess-settings">
+                <label style="display:block; margin-bottom: 5px;">Köridő:</label>
+                <div class="button-group" id="turn-timer-group">
+                    <button class="toggle-btn" data-value="30">30 mp</button>
+                    <button class="toggle-btn active" data-value="60">1 perc</button>
+                    <button class="toggle-btn" data-value="120">2 perc</button>
+                    <button class="toggle-btn" data-value="300">5 perc</button>
+                    <button class="toggle-btn" data-value="600">10 perc</button>
+                    <button class="toggle-btn" data-value="0">Nincs</button>
+                </div>
+            </div>
+            
+            <div id="autoguess-settings" style="display: none;">
+                <label style="display:block; margin-bottom: 5px;">Gépi sebesség:</label>
+                <div class="button-group" id="autoguess-speed-group">
+                    <button class="toggle-btn" data-value="5">Gyors</button>
+                    <button class="toggle-btn active" data-value="10">Közepes</button>
+                    <button class="toggle-btn" data-value="15">Lassú</button>
+                </div>
+
+                <label style="display:block; margin-bottom: 5px;">Gép nehézsége:</label>
+                <div class="button-group" id="autoguess-difficulty-group">
+                    <button class="toggle-btn" data-value="easy">Könnyű</button>
+                    <button class="toggle-btn" data-value="medium">Közepes</button>
+                    <button class="toggle-btn active" data-value="hard">Nehéz</button>
+                </div>
+
+                <label style="display:block; margin-bottom: 5px;">Saját tippek száma:</label>
+                <div class="button-group" id="autoguess-attempts-group">
+                    <button class="toggle-btn" data-value="1">1</button>
+                    <button class="toggle-btn" data-value="2">2</button>
+                    <button class="toggle-btn active" data-value="3">3</button>
+                </div>
+            </div>
+            
+            <button id="create-lobby-btn" class="main-menu-btn" style="background-color: var(--accent-color);">Létrehozás</button>
         </div>
+        <hr style="border-color: var(--border-color); width: 100%; margin: 10px 0;">
+        <div style="width: 100%; text-align: left;">
+            <h3 style="margin-top: 0;">Csatlakozás Lobbyhoz</h3>
+            <input type="text" inputmode="numeric" pattern="[0-9]*" id="lobby-code-input" placeholder="Kód (pl. 12345)" maxlength="5" style="padding: 10px; width: 100%; margin-bottom: 15px; text-transform: uppercase; text-align: center; font-size: 1.2rem; border-radius: 8px; background: var(--hole-color); color: var(--text-color); border: 1px solid var(--border-color); box-sizing: border-box;">
+            <button id="join-lobby-btn" class="main-menu-btn">Csatlakozás</button>
+        </div>
+        
+        <button id="menu-back-from-multiplayer-btn" class="menu-back-btn">Vissza a főmenübe</button>
     </div>
 
     <div id="mode-info-modal" class="modal-overlay">
@@ -577,6 +670,17 @@
             <div class="info-text">
                 <p><strong>Switch & Guess:</strong> Egymás ellen játszotok egy közös táblán. Felváltva tesztek le egy-egy sort, és aki végül megfejti a kódot, az nyer.</p>
                 <p><strong>Auto-Guess Racing:</strong> A számítógép magától elkezd tippelni a közös táblán. Nektek az a feladatotok, hogy a gép tippjei alapján, saját magatoknak tippeljetek. Az nyer, aki hamarabb kitalálja a kódot, mielőtt elfogyna a próbálkozása, vagy mielőtt az ellenfele kitalálná!</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="exit-confirm-modal" class="modal-overlay">
+        <div class="modal-content" style="text-align: center;">
+            <h2>Kilépés a játékból</h2>
+            <p>Biztosan ki akarsz lépni a jelenlegi játékból?</p>
+            <div style="display: flex; flex-direction: column; gap: 15px; justify-content: center; margin-top: 25px;">
+                <button id="exit-confirm-yes-btn" class="main-menu-btn" style="background-color: var(--accent-color); font-size: 1.2rem; padding: 18px;">Igen</button>
+                <button id="exit-confirm-no-btn" class="main-menu-btn" style="font-size: 1.2rem; padding: 18px;">Nem</button>
             </div>
         </div>
     </div>
@@ -1368,24 +1472,92 @@
                     }
                 }
             });
+            // --- MAIN MENU LOGIC ---
+            const mainMenuContainer = document.getElementById('main-menu-container');
+            const gameContainer = document.getElementById('game-container');
+            const gameControls = document.getElementById('game-controls');
+            const multiplayerMenuContainer = document.getElementById('multiplayer-menu-container');
+            
+            document.getElementById('menu-singleplayer-btn').addEventListener('click', () => {
+                mainMenuContainer.style.display = 'none';
+                gameContainer.style.display = 'flex';
+                gameControls.style.display = 'flex';
+                newGame();
+            });
+            
+            document.getElementById('menu-multiplayer-btn').addEventListener('click', () => {
+                mainMenuContainer.style.display = 'none';
+                multiplayerMenuContainer.style.display = 'flex';
+            });
+            
+            document.getElementById('menu-settings-btn').addEventListener('click', () => {
+                document.getElementById('settings-modal').classList.add('visible');
+            });
+            
+            const exitConfirmModal = document.getElementById('exit-confirm-modal');
+            const exitConfirmYesBtn = document.getElementById('exit-confirm-yes-btn');
+            const exitConfirmNoBtn = document.getElementById('exit-confirm-no-btn');
+
+            document.getElementById('nav-back-to-menu-btn').addEventListener('click', () => {
+                if (!isGameOver) {
+                    exitConfirmModal.classList.add('visible');
+                } else {
+                    exitGameToMenu();
+                }
+            });
+
+            exitConfirmNoBtn.addEventListener('click', () => {
+                exitConfirmModal.classList.remove('visible');
+            });
+
+            exitConfirmYesBtn.addEventListener('click', () => {
+                exitConfirmModal.classList.remove('visible');
+                exitGameToMenu();
+            });
+
+            function exitGameToMenu() {
+                gameContainer.style.display = 'none';
+                gameControls.style.display = 'none';
+                mainMenuContainer.style.display = 'flex';
+                if(unsubscribeLobby) { unsubscribeLobby(); unsubscribeLobby = null; }
+                if(autoGuessTimer) { clearInterval(autoGuessTimer); autoGuessTimer = null; }
+            }
+            
+            document.getElementById('menu-back-from-multiplayer-btn').addEventListener('click', () => {
+                multiplayerMenuContainer.style.display = 'none';
+                mainMenuContainer.style.display = 'flex';
+            });
             
             // MULTIPLAYER LOGIC
-            const multiplayerBtn = document.getElementById('multiplayer-btn');
-            const multiplayerModal = document.getElementById('multiplayer-modal');
-            const closeMultiplayerBtn = document.getElementById('close-multiplayer-btn');
             const createLobbyBtn = document.getElementById('create-lobby-btn');
             const joinLobbyBtn = document.getElementById('join-lobby-btn');
-            const turnTimerSelect = document.getElementById('turn-timer-select');
-            
-            const gameModeSelect = document.getElementById('game-mode-select');
+            function getButtonGroupValue(groupId) {
+                const btn = document.querySelector(`#${groupId} .toggle-btn.active`);
+                return btn ? btn.dataset.value : null;
+            }
+
+            function setupButtonGroup(groupId, onChangeCallback) {
+                const container = document.getElementById(groupId);
+                if(!container) return;
+                const buttons = container.querySelectorAll('.toggle-btn');
+                buttons.forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        buttons.forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        if (onChangeCallback) onChangeCallback(btn.dataset.value);
+                    });
+                });
+            }
+
             const switchGuessSettings = document.getElementById('switch-guess-settings');
             const autoguessSettings = document.getElementById('autoguess-settings');
             const modeInfoBtn = document.getElementById('mode-info-btn');
             const modeInfoModal = document.getElementById('mode-info-modal');
             const closeModeInfoBtn = document.getElementById('close-mode-info-btn');
 
-            gameModeSelect.addEventListener('change', (e) => {
-                if (e.target.value === 'switch') {
+            setupButtonGroup('game-mode-group', (val) => {
+                if (val === 'switch') {
                     switchGuessSettings.style.display = 'block';
                     autoguessSettings.style.display = 'none';
                 } else {
@@ -1393,6 +1565,10 @@
                     autoguessSettings.style.display = 'block';
                 }
             });
+            setupButtonGroup('turn-timer-group');
+            setupButtonGroup('autoguess-speed-group');
+            setupButtonGroup('autoguess-difficulty-group');
+            setupButtonGroup('autoguess-attempts-group');
 
             modeInfoBtn.addEventListener('click', () => {
                 modeInfoModal.classList.add('visible');
@@ -1421,15 +1597,6 @@
                 });
             }
 
-            if (multiplayerBtn) {
-                multiplayerBtn.addEventListener('click', () => {
-                    if(!isFirebaseReady) { alert("Firebase még nincs kész. Kérlek várj vagy ellenőrizd a configot!"); return; }
-                    settingsPanel.classList.remove('visible');
-                    multiplayerModal.classList.add('visible');
-                });
-            }
-
-            closeMultiplayerBtn.addEventListener('click', () => multiplayerModal.classList.remove('visible'));
             closeWaitingBtn.addEventListener('click', () => {
                 waitingRoomModal.classList.remove('visible');
                 newGame(); // resets multi to local
@@ -1438,7 +1605,9 @@
             createLobbyBtn.addEventListener('click', async () => {
                 try {
                     if (!auth.currentUser) throw new Error("Firebase Anonymous Auth nincs bekapcsolva vagy még tölt! Frissítsd az oldalt és várj egy kicsit.");
-                    multiplayerModal.classList.remove('visible');
+                    multiplayerMenuContainer.style.display = 'none';
+                    gameContainer.style.display = 'flex';
+                    gameControls.style.display = 'flex';
                     const code = Math.floor(10000 + Math.random() * 90000).toString();
                     newGame();
                     const newSecretCode = Array.from({ length: CODE_LENGTH }, () => COLOR_NAMES[Math.floor(Math.random() * COLOR_NAMES.length)]);
@@ -1450,7 +1619,7 @@
                     document.getElementById('display-lobby-code').textContent = code;
                     waitingRoomModal.classList.add('visible');
                     
-                    const selectedGameMode = gameModeSelect.value;
+                    const selectedGameMode = getButtonGroupValue('game-mode-group');
                     let lobbyData = {
                         status: 'waiting',
                         secretCode: newSecretCode,
@@ -1461,13 +1630,13 @@
                     };
 
                     if (selectedGameMode === 'switch') {
-                        lobbyData.turnTimerSeconds = parseInt(turnTimerSelect.value);
+                        lobbyData.turnTimerSeconds = parseInt(getButtonGroupValue('turn-timer-group'));
                         lobbyData.currentTurn = 0;
                         lobbyData.turnEndTime = 0;
                     } else {
-                        lobbyData.autoGuessSpeed = parseInt(document.getElementById('autoguess-speed').value);
-                        lobbyData.difficulty = document.getElementById('autoguess-difficulty').value;
-                        lobbyData.maxPlayerAttempts = parseInt(document.getElementById('autoguess-attempts').value);
+                        lobbyData.autoGuessSpeed = parseInt(getButtonGroupValue('autoguess-speed-group'));
+                        lobbyData.difficulty = getButtonGroupValue('autoguess-difficulty-group');
+                        lobbyData.maxPlayerAttempts = parseInt(getButtonGroupValue('autoguess-attempts-group'));
                         lobbyData.player1Attempts = 0;
                         lobbyData.player2Attempts = 0;
                         lobbyData.player1Status = 'playing';
@@ -1501,7 +1670,9 @@
                                 turnEndTime: newEndTime
                             });
                             
-                            multiplayerModal.classList.remove('visible');
+                            multiplayerMenuContainer.style.display = 'none';
+                            gameContainer.style.display = 'flex';
+                            gameControls.style.display = 'flex';
                             newGame();
                             lobbyId = code;
                             myPlayerIndex = 1;
