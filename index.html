@@ -1050,7 +1050,7 @@
                 }
             }
             function syncLiveGuess() { if (gameMode === 'multi' && currentTurn === myPlayerIndex && lobbyId && currentMultiMode === 'switch') { const strGuess = currentGuess.map(c => c || "").join(','); update(ref(db, `lobbies/${lobbyId}`), { liveGuess: strGuess }).catch(e => console.error(e)); } }
-            function updateGuessDisplay() { const rowEl = getActiveHolesContainer(); if (!rowEl) return; const attr = getHoleDataAttr(); const holes = rowEl.querySelectorAll('.hole'); holes.forEach((hole, index) => { const existingMarble = hole.querySelector('.marble'); const newColor = currentGuess[index]; if (!newColor && existingMarble) { hole.innerHTML = ''; } else if (newColor) { if (!existingMarble || existingMarble.dataset.color !== newColor) { hole.innerHTML = ''; const marble = document.createElement('div'); marble.className = 'marble marble-add-anim'; marble.style.background = COLORS[newColor]; marble.dataset.color = newColor; if (newColor === highlightedColor) { marble.classList.add('highlighted'); } hole.appendChild(marble); } } }); syncLiveGuess(); }
+            function updateGuessDisplay(forceRowEl = null, forceGuess = null) { const rowEl = forceRowEl || getActiveHolesContainer(); if (!rowEl) return; const guessArr = forceGuess || currentGuess; const attr = forceRowEl ? 'data-hole-index' : getHoleDataAttr(); const holes = rowEl.querySelectorAll('.hole'); holes.forEach((hole, index) => { const existingMarble = hole.querySelector('.marble'); const newColor = guessArr[index]; if (!newColor && existingMarble) { hole.innerHTML = ''; } else if (newColor) { if (!existingMarble || existingMarble.dataset.color !== newColor) { hole.innerHTML = ''; const marble = document.createElement('div'); marble.className = 'marble marble-add-anim'; marble.style.background = COLORS[newColor]; marble.dataset.color = newColor; if (newColor === highlightedColor) { marble.classList.add('highlighted'); } hole.appendChild(marble); } } }); if (!forceRowEl && !forceGuess) syncLiveGuess(); }
             function placeColor(e,t){const o=currentGuess[e];o!==t&&(actionHistory.push({index:e,previousColor:o}),currentGuess[e]=t,updateGuessDisplay(),updateButtonStates())}
             function selectHole(e){isGameOver||(deselectAllHoles(),selectedHoleIndex=e,getActiveHolesContainer()?.querySelector(`.hole[${getHoleDataAttr()}='${e}']`)?.classList.add("selected-hole"),updateButtonStates())}
             function deselectAllHoles(){document.querySelectorAll(".hole.selected-hole").forEach((e=>e.classList.remove("selected-hole"))),selectedHoleIndex=null}
@@ -1475,16 +1475,18 @@
             }
 
             function rebuildBoard(serverGuesses) {
+                const savedCurrentGuess = [...currentGuess];
+                
                 gameBoard.innerHTML = '';
                 createBoard();
                 
                 serverGuesses.forEach((sg, i) => {
-                    currentAttempt = i;
-                    currentGuess = sg.guess;
-                    updateGuessDisplay();
-                    
-                    const { black, white } = evaluateGuess();
                     const rowEl = document.querySelector(`.guess-row[data-row='${i}']`);
+                    updateGuessDisplay(rowEl, sg.guess);
+                    
+                    currentGuess = sg.guess;
+                    const { black, white } = evaluateGuess();
+                    
                     const pegEls = rowEl.querySelectorAll(".peg");
                     const feedbackClasses = [...Array(black).fill("feedback-black"), ...Array(white).fill("feedback-white")];
                     for (let j = 0; j < feedbackClasses.length; j++) {
@@ -1493,7 +1495,11 @@
                 });
                 
                 currentAttempt = serverGuesses.length;
-                currentGuess = Array(CODE_LENGTH).fill(null);
+                if (currentMultiMode === 'autoguess') {
+                    currentGuess = savedCurrentGuess;
+                } else {
+                    currentGuess = Array(CODE_LENGTH).fill(null);
+                }
                 actionHistory = [];
             }
 
@@ -1634,20 +1640,28 @@
                 if (systemGuesses.length >= 10) return;
                 
                 let nextGuess = [];
-                if (autoGuessDifficulty === 'hard') {
-                    nextGuess = Array.from({ length: CODE_LENGTH }, () => COLOR_NAMES[Math.floor(Math.random() * COLOR_NAMES.length)]);
-                } else if (autoGuessDifficulty === 'medium') {
-                    if (systemGuesses.length < COLOR_NAMES.length) {
-                        nextGuess = Array(CODE_LENGTH).fill(COLOR_NAMES[systemGuesses.length]);
-                    } else {
-                        nextGuess = Array.from({ length: CODE_LENGTH }, () => COLOR_NAMES[Math.floor(Math.random() * COLOR_NAMES.length)]);
-                    }
+                const step = systemGuesses.length;
+
+                if (step === 0) {
+                    nextGuess = [...COLOR_NAMES.slice(0, 4)].sort(() => Math.random() - 0.5);
+                } else if (step === 1) {
+                    nextGuess = [...COLOR_NAMES.slice(4, 8)].sort(() => Math.random() - 0.5);
                 } else {
                     nextGuess = Array.from({ length: CODE_LENGTH }, () => COLOR_NAMES[Math.floor(Math.random() * COLOR_NAMES.length)]);
-                    const correctCount = Math.min(CODE_LENGTH, Math.floor(systemGuesses.length / 2));
+                    
+                    let correctCount = 0;
+                    if (autoGuessDifficulty === 'easy') {
+                        correctCount = Math.min(CODE_LENGTH, Math.floor((step - 1) / 2)); 
+                    } else if (autoGuessDifficulty === 'medium') {
+                        correctCount = Math.max(0, Math.min(CODE_LENGTH, Math.floor((step - 3) / 2)));
+                    } else if (autoGuessDifficulty === 'hard') {
+                        correctCount = Math.max(0, Math.min(CODE_LENGTH, Math.floor((step - 5) / 2)));
+                    }
+                    
                     for (let i = 0; i < correctCount; i++) {
                         nextGuess[i] = secretCode[i];
                     }
+                    
                     nextGuess.sort(() => Math.random() - 0.5);
                 }
                 
