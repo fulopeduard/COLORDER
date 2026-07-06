@@ -691,8 +691,23 @@
             <h2>Beállítások</h2>
             <div style="display: flex; flex-direction: column; gap: 15px; justify-content: center; margin-top: 25px;">
                 <button id="menu-controls-btn" class="main-menu-btn">Irányítás</button>
-                <button id="menu-effects-toggle-btn" class="main-menu-btn">Effektek be/ki</button>
-                <button id="menu-theme-toggle-btn" class="main-menu-btn">Téma váltása</button>
+                
+                <div>
+                    <label style="display:block; margin-bottom: 5px; font-weight: bold; text-align: left;">Effektek:</label>
+                    <div class="button-group" id="settings-effects-group">
+                        <button class="toggle-btn" data-value="on">Be</button>
+                        <button class="toggle-btn" data-value="off">Ki</button>
+                    </div>
+                </div>
+
+                <div>
+                    <label style="display:block; margin-bottom: 5px; font-weight: bold; text-align: left;">Téma:</label>
+                    <div class="button-group" id="settings-theme-group">
+                        <button class="toggle-btn" data-value="dark">Sötét</button>
+                        <button class="toggle-btn" data-value="light">Világos</button>
+                    </div>
+                </div>
+
                 <button id="menu-info-btn" class="main-menu-btn">Információ</button>
             </div>
         </div>
@@ -1507,6 +1522,15 @@
             const closeSettingsModalBtn = document.getElementById('close-settings-modal-btn');
             
             document.getElementById('menu-settings-btn').addEventListener('click', () => {
+                const effectsGroup = document.getElementById('settings-effects-group');
+                const themeGroup = document.getElementById('settings-theme-group');
+                
+                effectsGroup.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
+                effectsGroup.querySelector(`.toggle-btn[data-value="${effectsEnabled ? 'on' : 'off'}"]`).classList.add('active');
+
+                themeGroup.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
+                themeGroup.querySelector(`.toggle-btn[data-value="${document.body.classList.contains('light-theme') ? 'light' : 'dark'}"]`).classList.add('active');
+
                 settingsModal.classList.add('visible');
             });
             
@@ -1524,12 +1548,15 @@
                 document.getElementById('info-modal').classList.add('visible');
             });
 
-            document.getElementById('menu-effects-toggle-btn').addEventListener('click', () => {
-                toggleEffects();
+            setupButtonGroup('settings-effects-group', (val) => {
+                const turnOn = val === 'on';
+                if (effectsEnabled !== turnOn) toggleEffects();
             });
 
-            document.getElementById('menu-theme-toggle-btn').addEventListener('click', () => {
-                toggleTheme();
+            setupButtonGroup('settings-theme-group', (val) => {
+                const isLight = val === 'light';
+                const currentlyLight = document.body.classList.contains('light-theme');
+                if (isLight !== currentlyLight) toggleTheme();
             });
             
             const exitConfirmModal = document.getElementById('exit-confirm-modal');
