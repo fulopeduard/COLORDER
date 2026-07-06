@@ -658,7 +658,12 @@
                 const req = pendingTimeChange;
                 if (!req) return;
                 
-                const newEndTime = req.remainingTime > 0 ? Date.now() + (req.remainingTime * 1000) : 0;
+                let newEndTime;
+                if (turnTimerSeconds === 0 && req.newTime > 0) {
+                    newEndTime = Date.now() + (req.newTime * 1000);
+                } else {
+                    newEndTime = req.remainingTime > 0 ? Date.now() + (req.remainingTime * 1000) : 0;
+                }
                 
                 await update(ref(db, `lobbies/${lobbyId}`), {
                     timerChangeRequest: null,
