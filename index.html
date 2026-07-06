@@ -117,7 +117,7 @@
 
         .guess-holes { display: flex; gap: 8px; }
 
-        .marble { width: 90%; height: 90%; border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.4); pointer-events: none; position: relative; transition: all var(--anim-fast); }
+        .marble { width: 90%; height: 90%; border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.4); pointer-events: none; position: relative; transition: all var(--anim-fast); overflow: hidden; }
         .marble-add-anim { animation: dropInBounce 0.5s ease-out forwards; }
         @keyframes dropInBounce { 0% { transform: translateY(-50px) scale(0.3); opacity: 0; } 60% { transform: translateY(5px) scale(1.1); opacity: 1; } 80% { transform: translateY(-2px) scale(0.95); } 100% { transform: translateY(0) scale(1); opacity: 1; } }
         
@@ -320,7 +320,7 @@
         }
         .game-nav-back:hover { opacity: 1; transform: scale(1.1); }
 
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(44, 62, 80, 0.85); backdrop-filter: blur(5px); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.4); backdrop-filter: blur(5px); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
         .modal-overlay.visible { opacity: 1; pointer-events: auto; }
         
         .modal-content {
@@ -686,14 +686,22 @@
     </div>
 
     <div id="settings-modal" class="modal-overlay">
-        <div class="modal-content" style="text-align: center;">
+        <div class="modal-content" style="text-align: center; max-width: 450px;">
             <button id="close-settings-modal-btn" class="close-btn" title="Bezárás">&times;</button>
             <h2>Beállítások</h2>
             <div style="display: flex; flex-direction: column; gap: 15px; justify-content: center; margin-top: 25px;">
                 <button id="menu-controls-btn" class="main-menu-btn">Irányítás</button>
                 
                 <div>
-                    <label style="display:block; margin-bottom: 5px; font-weight: bold; text-align: left;">Effektek:</label>
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px;">
+                        <label style="font-weight: bold; text-align: left; margin: 0;">Effektek:</label>
+                        <div style="display: flex; gap: 8px;">
+                            <div class="marble" data-color="red" style="width: 24px; height: 24px; background: radial-gradient(circle at 30% 30%, #ff7b7b, #c81d1d); border-radius: 50%; box-shadow: inset -2px -2px 4px rgba(0,0,0,0.5), 0 2px 4px rgba(0,0,0,0.4);"></div>
+                            <div class="marble" data-color="blue" style="width: 24px; height: 24px; background: radial-gradient(circle at 30% 30%, #7b99ff, #1d43c8); border-radius: 50%; box-shadow: inset -2px -2px 4px rgba(0,0,0,0.5), 0 2px 4px rgba(0,0,0,0.4);"></div>
+                            <div class="marble" data-color="green" style="width: 24px; height: 24px; background: radial-gradient(circle at 30% 30%, #7bffa2, #1dc84a); border-radius: 50%; box-shadow: inset -2px -2px 4px rgba(0,0,0,0.5), 0 2px 4px rgba(0,0,0,0.4);"></div>
+                            <div class="marble" data-color="yellow" style="width: 24px; height: 24px; background: radial-gradient(circle at 30% 30%, #ffff7b, #c8c81d); border-radius: 50%; box-shadow: inset -2px -2px 4px rgba(0,0,0,0.5), 0 2px 4px rgba(0,0,0,0.4);"></div>
+                        </div>
+                    </div>
                     <div class="button-group" id="settings-effects-group">
                         <button class="toggle-btn" data-value="on">Be</button>
                         <button class="toggle-btn" data-value="off">Ki</button>
@@ -703,8 +711,8 @@
                 <div>
                     <label style="display:block; margin-bottom: 5px; font-weight: bold; text-align: left;">Téma:</label>
                     <div class="button-group" id="settings-theme-group">
-                        <button class="toggle-btn" data-value="dark">Sötét</button>
-                        <button class="toggle-btn" data-value="light">Világos</button>
+                        <button class="toggle-btn" data-value="dark">Mintázott</button>
+                        <button class="toggle-btn" data-value="light">Egyszerű</button>
                     </div>
                 </div>
 
@@ -1317,8 +1325,23 @@
                 } 
             }
 
-            function runEffects() { if (!effectsEnabled || isGameOver) return; const placedMarbles = document.querySelectorAll('.marble'); if (placedMarbles.length === 0) return; const uniqueColorsOnBoard = [...new Set(Array.from(placedMarbles).map(m => m.dataset.color))]; if (uniqueColorsOnBoard.length === 0) return; const colorToAnimate = uniqueColorsOnBoard[Math.floor(Math.random() * uniqueColorsOnBoard.length)]; const marblesToAnimate = Array.from(document.querySelectorAll(`.marble[data-color="${colorToAnimate}"]`)).sort((a,b)=>parseInt(a.closest(".guess-row").dataset.row)-parseInt(b.closest(".guess-row").dataset.row)); const effectClass = Math.random() < 0.5 ? 'shimmer-effect' : 'pulse-effect'; const animationDuration = effectClass === 'shimmer-effect' ? 1000 : 700; marblesToAnimate.forEach((marble, i) => { setTimeout(() => { marble.classList.add(effectClass); setTimeout(() => { marble.classList.remove(effectClass); }, animationDuration); }, i * 150); }); }
-            function toggleEffects() { effectsEnabled = !effectsEnabled; effectsToggleButton.classList.toggle('active', effectsEnabled); localStorage.setItem('szinozonEffects', effectsEnabled ? 'on' : 'off'); if (effectsEnabled) { if (effectInterval) clearInterval(effectInterval); effectInterval = setInterval(runEffects, 12000); } else { if (effectInterval) clearInterval(effectInterval); } }
+            function runEffects() { 
+                if (!effectsEnabled) return; 
+                const placedMarbles = document.querySelectorAll('.marble'); 
+                if (placedMarbles.length === 0) return; 
+                const uniqueColorsOnBoard = [...new Set(Array.from(placedMarbles).map(m => m.dataset.color))]; 
+                if (uniqueColorsOnBoard.length === 0) return; 
+                const colorToAnimate = uniqueColorsOnBoard[Math.floor(Math.random() * uniqueColorsOnBoard.length)]; 
+                const marblesToAnimate = Array.from(document.querySelectorAll(`.marble[data-color="${colorToAnimate}"]`)).sort((a,b)=>{
+                    const rowA = a.closest(".guess-row") ? parseInt(a.closest(".guess-row").dataset.row) : 99;
+                    const rowB = b.closest(".guess-row") ? parseInt(b.closest(".guess-row").dataset.row) : 99;
+                    return rowA - rowB;
+                });
+                const effectClass = Math.random() < 0.5 ? 'shimmer-effect' : 'pulse-effect'; 
+                const animationDuration = effectClass === 'shimmer-effect' ? 1000 : 700; 
+                marblesToAnimate.forEach((marble, i) => { setTimeout(() => { marble.classList.add(effectClass); setTimeout(() => { marble.classList.remove(effectClass); }, animationDuration); }, i * 150); }); 
+            }
+            function toggleEffects() { effectsEnabled = !effectsEnabled; effectsToggleButton.classList.toggle('active', effectsEnabled); localStorage.setItem('szinozonEffects', effectsEnabled ? 'on' : 'off'); if (effectsEnabled) { if (effectInterval) clearInterval(effectInterval); effectInterval = setInterval(runEffects, 12000); setTimeout(runEffects, 200); } else { if (effectInterval) clearInterval(effectInterval); } }
             function clearColorHighlight() { document.querySelectorAll('.marble.highlighted').forEach(m => m.classList.remove('highlighted')); highlightedColor = null; }
             function handleColorHighlight(e) { e.preventDefault(); if (isGameOver) return; const colorEl = e.target.closest('.palette-color'); if (!colorEl) return; const color = colorEl.dataset.color; const isAlreadyHighlighted = color === highlightedColor; clearColorHighlight(); if (!isAlreadyHighlighted) { highlightedColor = color; document.querySelectorAll(`.marble[data-color="${color}"]`).forEach(m => m.classList.add('highlighted')); } }
             
@@ -1521,6 +1544,25 @@
             const settingsModal = document.getElementById('settings-modal');
             const closeSettingsModalBtn = document.getElementById('close-settings-modal-btn');
             
+            let settingsEffectInterval = null;
+            function startSettingsEffects() {
+                if (settingsEffectInterval) clearInterval(settingsEffectInterval);
+                settingsEffectInterval = setInterval(() => {
+                    if (!effectsEnabled) return;
+                    const settingsMarbles = document.querySelectorAll('#settings-modal .marble');
+                    if (settingsMarbles.length > 0) {
+                        const randomMarble = settingsMarbles[Math.floor(Math.random() * settingsMarbles.length)];
+                        const effectClass = Math.random() < 0.5 ? 'shimmer-effect' : 'pulse-effect';
+                        const animationDuration = effectClass === 'shimmer-effect' ? 1000 : 700;
+                        randomMarble.classList.add(effectClass);
+                        setTimeout(() => randomMarble.classList.remove(effectClass), animationDuration);
+                    }
+                }, 1000);
+            }
+            function stopSettingsEffects() {
+                if (settingsEffectInterval) clearInterval(settingsEffectInterval);
+            }
+
             document.getElementById('menu-settings-btn').addEventListener('click', () => {
                 const effectsGroup = document.getElementById('settings-effects-group');
                 const themeGroup = document.getElementById('settings-theme-group');
@@ -1532,19 +1574,23 @@
                 themeGroup.querySelector(`.toggle-btn[data-value="${document.body.classList.contains('light-theme') ? 'light' : 'dark'}"]`).classList.add('active');
 
                 settingsModal.classList.add('visible');
+                startSettingsEffects();
             });
             
             closeSettingsModalBtn.addEventListener('click', () => {
                 settingsModal.classList.remove('visible');
+                stopSettingsEffects();
             });
 
             document.getElementById('menu-controls-btn').addEventListener('click', () => {
                 settingsModal.classList.remove('visible');
+                stopSettingsEffects();
                 document.getElementById('controls-modal').classList.add('visible');
             });
 
             document.getElementById('menu-info-btn').addEventListener('click', () => {
                 settingsModal.classList.remove('visible');
+                stopSettingsEffects();
                 document.getElementById('info-modal').classList.add('visible');
             });
 
