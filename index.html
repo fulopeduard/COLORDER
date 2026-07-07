@@ -729,7 +729,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getDatabase, ref, set, get, onValue, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+        import { getDatabase, ref, set, get, onValue, update, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBvJZlpmKx8ncaeLGCwf266sqRub6BBKFM",
@@ -905,11 +905,65 @@
             const settingsPanel = document.getElementById('settings-panel');
 
 
+            function generateAllSystemGuesses(code, difficulty, maxSystemGuesses) {
+                let systemGuesses = [];
+                for (let step = 0; step < maxSystemGuesses; step++) {
+                    let nextGuess = [];
+                    if (step === 0) {
+                        nextGuess = [...COLOR_NAMES.slice(0, 4)].sort(() => Math.random() - 0.5);
+                    } else if (step === 1) {
+                        nextGuess = [...COLOR_NAMES.slice(4, 8)].sort(() => Math.random() - 0.5);
+                    } else {
+                        let correctCount = 0;
+                        if (difficulty === 'easy') {
+                            correctCount = Math.min(CODE_LENGTH - 1, Math.floor((step - 1) / 2));
+                        } else if (difficulty === 'medium') {
+                            correctCount = Math.min(CODE_LENGTH - 1, Math.floor((step - 1) / 3));
+                        } else {
+                            correctCount = 0;
+                        }
+                        
+                        nextGuess = Array(CODE_LENGTH).fill(null);
+                        const availableIndices = [0, 1, 2, 3];
+                        
+                        for (let i = 0; i < correctCount; i++) {
+                            const randomIdx = Math.floor(Math.random() * availableIndices.length);
+                            const pos = availableIndices.splice(randomIdx, 1)[0];
+                            nextGuess[pos] = code[pos];
+                        }
+                        
+                        for (let i = 0; i < availableIndices.length; i++) {
+                            const pos = availableIndices[i];
+                            let randomColor = COLOR_NAMES[Math.floor(Math.random() * COLOR_NAMES.length)];
+                            nextGuess[pos] = randomColor;
+                        }
+                    }
+                    
+                    if (nextGuess.join(',') === code.join(',')) {
+                        let newColor = nextGuess[0];
+                        while (newColor === nextGuess[0]) {
+                            newColor = COLOR_NAMES[Math.floor(Math.random() * COLOR_NAMES.length)];
+                        }
+                        nextGuess[0] = newColor;
+                    }
+                    
+                    systemGuesses.push({ guess: nextGuess });
+                }
+                return systemGuesses;
+            }
+
             async function triggerRematch() {
                 if (!lobbyId || gameMode !== 'multi') return;
                 try {
                     undoButton.disabled = true;
                     const newCode = Array.from({ length: CODE_LENGTH }, () => COLOR_NAMES[Math.floor(Math.random() * COLOR_NAMES.length)]);
+                    
+                    let newSystemGuesses = [];
+                    if (currentMultiMode === 'autoguess') {
+                        const maxSysGuesses = MAX_ATTEMPTS - maxPlayerAttempts;
+                        newSystemGuesses = generateAllSystemGuesses(newCode, autoGuessDifficulty, maxSysGuesses);
+                    }
+                    
                     const updates = {
                         status: 'playing',
                         secretCode: newCode,
@@ -920,8 +974,11 @@
                         player1Status: 'playing',
                         player2Status: 'playing',
                         currentTurn: 0,
-                        systemGuesses: [],
+                        systemGuesses: newSystemGuesses,
+                        gameStartTime: Date.now(),
                         guesses: [],
+                        player1Guesses: [],
+                        player2Guesses: [],
                         timerChangeRequest: null,
                         turnEndTime: turnTimerSeconds > 0 ? Date.now() + (turnTimerSeconds * 1000) : 0
                     };
@@ -941,6 +998,8 @@
                 }
                 const timerDisplayContainer = document.getElementById('timer-display');
                 if (timerDisplayContainer) timerDisplayContainer.classList.remove('clickable');
+                
+                if (autoGuessTimer) { clearInterval(autoGuessTimer); autoGuessTimer = null; }
 
                 // Visszaállítja a Visszavonás gombot az eredeti állapotába
                 undoButton.innerHTML = undoIconSVG;
@@ -1118,42 +1177,58 @@
                         await animateFeedbackDisplay(black, white);
                         currentAttempt = oldAttempt;
                         
-                        const updateData = {};
                         const attemptsKey = myPlayerIndex === 0 ? 'player1Attempts' : 'player2Attempts';
                         const statusKey = myPlayerIndex === 0 ? 'player1Status' : 'player2Status';
+                        const guessesKey = myPlayerIndex === 0 ? 'player1Guesses' : 'player2Guesses';
+                        const otherStatusKey = myPlayerIndex === 0 ? 'player2Status' : 'player1Status';
                         
-                        const snapshot = await get(ref(db, `lobbies/${lobbyId}/${attemptsKey}`));
-                        const currentAtt = (snapshot.exists() ? snapshot.val() : 0) + 1;
-                        updateData[attemptsKey] = currentAtt;
-                        
-                        playerCurrentAttempt++;
-                        
-                        if (black === CODE_LENGTH) {
-                            updateData[statusKey] = 'won';
-                            if (!opponentAlreadyWon) {
-                                updateData.winner = auth.currentUser.uid;
-                                updateData.winnerIndex = myPlayerIndex;
-                                updateData.status = 'finished';
+                        const lobbyRef = ref(db, `lobbies/${lobbyId}`);
+                        const result = await runTransaction(lobbyRef, (lobby) => {
+                            if (lobby) {
+                                if (!lobby[guessesKey]) lobby[guessesKey] = [];
+                                lobby[guessesKey].push({ guess: [...currentGuess] });
+                                
+                                lobby[attemptsKey] = (lobby[attemptsKey] || 0) + 1;
+                                
+                                if (black === CODE_LENGTH) {
+                                    if (!lobby.winner) {
+                                        lobby.winner = auth.currentUser.uid;
+                                        lobby.winnerIndex = myPlayerIndex;
+                                        lobby.status = 'finished';
+                                        lobby[statusKey] = 'won';
+                                    } else {
+                                        lobby[statusKey] = 'lost';
+                                    }
+                                } else {
+                                    if (lobby[attemptsKey] >= lobby.maxPlayerAttempts) {
+                                        lobby[statusKey] = 'dead';
+                                        if (lobby[otherStatusKey] === 'dead' || lobby[otherStatusKey] === 'won') {
+                                            lobby.status = 'finished';
+                                        }
+                                    }
+                                }
                             }
-                            endGame(true, myPlayerIndex);
-                        } else if (playerCurrentAttempt >= MAX_ATTEMPTS) {
-                            updateData[statusKey] = 'dead';
-                            isPlayerDead = true;
+                            return lobby;
+                        });
+                        // playerCurrentAttempt++; (removed to fix skipping bug, as syncGameState recalculates it)
+                        
+                        if (result.committed && result.snapshot.exists()) {
+                            const finalData = result.snapshot.val();
                             
-                            const otherStatusKey = myPlayerIndex === 0 ? 'player2Status' : 'player1Status';
-                            const otherSnapshot = await get(ref(db, `lobbies/${lobbyId}/${otherStatusKey}`));
-                            const otherStatus = otherSnapshot.val();
-                            
-                            if (otherStatus === 'dead') {
-                                updateData.status = 'finished';
+                            if (finalData[statusKey] === 'dead' || finalData[statusKey] === 'lost') {
+                                isPlayerDead = true;
                             }
                             
-                            if (opponentAlreadyWon) {
+                            if (finalData.winner) {
+                                if (finalData.winnerIndex === myPlayerIndex) {
+                                    endGame(true, myPlayerIndex);
+                                } else {
+                                    endGame(false);
+                                }
+                            } else if (finalData.status === 'finished') {
                                 endGame(false);
                             }
                         }
-                        
-                        await update(ref(db, `lobbies/${lobbyId}`), updateData);
                         
                         if (!isGameOver && !isPlayerDead) {
                             currentGuess = Array(CODE_LENGTH).fill(null);
@@ -1776,7 +1851,11 @@
                         lobbyData.player2Attempts = 0;
                         lobbyData.player1Status = 'playing';
                         lobbyData.player2Status = 'waiting';
-                        lobbyData.systemGuesses = [];
+                        const maxSysGuesses = MAX_ATTEMPTS - lobbyData.maxPlayerAttempts;
+                        lobbyData.systemGuesses = generateAllSystemGuesses(newSecretCode, lobbyData.difficulty, maxSysGuesses);
+                        lobbyData.gameStartTime = Date.now();
+                        lobbyData.player1Guesses = [];
+                        lobbyData.player2Guesses = [];
                     }
                     
                     await set(ref(db, `lobbies/${code}`), lobbyData);
@@ -1832,7 +1911,7 @@
                     const data = snapshot.val();
                     if(!data) return;
                     
-                    if(data.status === 'playing') {
+                    if(data.status === 'playing' || data.status === 'finished') {
                         waitingRoomModal.classList.remove('visible');
                         syncGameState(data);
                     }
@@ -1866,6 +1945,7 @@
             }
 
             function startMultiplayerRematch() {
+                if (autoGuessTimer) { clearInterval(autoGuessTimer); autoGuessTimer = null; }
                 isChecking = false; isGameOver = false; currentAttempt = 0; playerCurrentAttempt = 0; opponentAlreadyWon = false;
                 currentGuess = Array(CODE_LENGTH).fill(null);
                 selectedHoleIndex = null; actionHistory = [];
@@ -1933,26 +2013,68 @@
                     updateActiveRow();
                     isPlayerDead = (myPlayerIndex === 0 ? p1Status : p2Status) === 'dead';
                     
-                    if (data.status === 'playing' && !data.winner) {
-                        const systemGuesses = data.systemGuesses || [];
-                        const maxSystemGuesses = MAX_ATTEMPTS - maxPlayerAttempts;
-                        if (myPlayerIndex === 0 && !autoGuessTimer && systemGuesses.length < maxSystemGuesses) {
-                            const intervalTime = autoGuessSpeed === 0 ? (4000 / maxSystemGuesses) : autoGuessSpeed * 1000;
-                            autoGuessTimer = setInterval(() => {
-                                generateAndPushSystemGuess();
-                            }, intervalTime);
-                        } else if (systemGuesses.length >= maxSystemGuesses && autoGuessTimer) {
-                            clearInterval(autoGuessTimer);
-                            autoGuessTimer = null;
-                        }
-                        
-                        if (systemGuesses.length > currentAttempt) {
-                            if (currentAttempt === 0 && systemGuesses.length > 1) {
-                                rebuildBoard(systemGuesses.slice(0, systemGuesses.length - 1));
+                    const myGuesses = myPlayerIndex === 0 ? (data.player1Guesses || []) : (data.player2Guesses || []);
+                    const firstPlayerRowIdx = MAX_ATTEMPTS - maxPlayerAttempts;
+                    const firstPlayerRowEl = document.querySelector(`.guess-row[data-row='${firstPlayerRowIdx}']`);
+                    const isFirstGuessRendered = firstPlayerRowEl && firstPlayerRowEl.querySelectorAll('.peg.feedback-black, .peg.feedback-white').length > 0;
+                    
+                    if (myGuesses.length > 0 && !isFirstGuessRendered) {
+                        const savedCurrentGuess = [...currentGuess];
+                        myGuesses.forEach((pg, i) => {
+                            const rowIdx = firstPlayerRowIdx + i;
+                            const rowEl = document.querySelector(`.guess-row[data-row='${rowIdx}']`);
+                            if (rowEl) {
+                                updateGuessDisplay(rowEl, pg.guess);
+                                currentGuess = pg.guess;
+                                const { black, white } = evaluateGuess();
+                                const pegEls = rowEl.querySelectorAll(".peg");
+                                const feedbackClasses = [...Array(black).fill("feedback-black"), ...Array(white).fill("feedback-white")];
+                                for (let j = 0; j < feedbackClasses.length; j++) {
+                                    pegEls[j].classList.add(feedbackClasses[j]);
+                                }
                             }
-                            const latestGuess = systemGuesses[systemGuesses.length - 1];
-                            currentAttempt = systemGuesses.length;
-                            animateSystemGuess(latestGuess.guess, systemGuesses.length - 1, autoGuessSpeed === 0);
+                        });
+                        currentGuess = savedCurrentGuess;
+                        updateGuessDisplay();
+                    }
+                    
+                    const systemGuesses = data.systemGuesses || [];
+                    const maxSystemGuesses = MAX_ATTEMPTS - maxPlayerAttempts;
+                    const gameStartTime = data.gameStartTime || Date.now();
+                    const intervalTime = autoGuessSpeed === 0 ? (4000 / maxSystemGuesses) : autoGuessSpeed * 1000;
+                    
+                    if (data.status === 'playing' && !data.winner) {
+                        if (!autoGuessTimer) {
+                            const triggerNextAnimation = async () => {
+                                if (isGameOver || currentAttempt >= systemGuesses.length) {
+                                    if (currentAttempt >= systemGuesses.length) {
+                                        clearInterval(autoGuessTimer);
+                                        autoGuessTimer = null;
+                                    }
+                                    return;
+                                }
+                                
+                                const elapsed = Date.now() - gameStartTime;
+                                const expectedCount = Math.min(systemGuesses.length, Math.floor(elapsed / intervalTime));
+                                
+                                if (currentAttempt < expectedCount) {
+                                    const indexToAnimate = currentAttempt;
+                                    currentAttempt++; 
+                                    await animateSystemGuess(systemGuesses[indexToAnimate].guess, indexToAnimate, autoGuessSpeed === 0);
+                                }
+                            };
+                            
+                            const elapsedInit = Date.now() - gameStartTime;
+                            const initExpectedCount = Math.min(systemGuesses.length, Math.floor(elapsedInit / intervalTime));
+                            
+                            if (currentAttempt === 0 && initExpectedCount > 0) {
+                                if (initExpectedCount > 1) {
+                                    rebuildBoard(systemGuesses.slice(0, initExpectedCount - 1));
+                                    currentAttempt = initExpectedCount - 1;
+                                }
+                            }
+                            
+                            autoGuessTimer = setInterval(triggerNextAnimation, 100);
                         }
                     } else if (data.status === 'finished') {
                         if (autoGuessTimer) { clearInterval(autoGuessTimer); autoGuessTimer = null; }
@@ -2054,57 +2176,7 @@
                 }
             }
 
-            async function generateAndPushSystemGuess() {
-                if (gameMode !== 'multi' || currentMultiMode !== 'autoguess' || !lobbyId || isGameOver) return;
-                
-                const snapshot = await get(ref(db, `lobbies/${lobbyId}/systemGuesses`));
-                let systemGuesses = snapshot.val() || [];
-                if (systemGuesses.length >= (MAX_ATTEMPTS - maxPlayerAttempts)) return;
-                
-                let nextGuess = [];
-                const step = systemGuesses.length;
 
-                if (step === 0) {
-                    nextGuess = [...COLOR_NAMES.slice(0, 4)].sort(() => Math.random() - 0.5);
-                } else if (step === 1) {
-                    nextGuess = [...COLOR_NAMES.slice(4, 8)].sort(() => Math.random() - 0.5);
-                } else {
-                    let correctCount = 0;
-                    if (autoGuessDifficulty === 'easy') {
-                        correctCount = Math.min(CODE_LENGTH - 1, Math.floor((step - 1) / 2));
-                    } else if (autoGuessDifficulty === 'medium') {
-                        correctCount = Math.min(CODE_LENGTH - 1, Math.floor((step - 1) / 3));
-                    } else {
-                        correctCount = 0;
-                    }
-                    
-                    nextGuess = Array(CODE_LENGTH).fill(null);
-                    const availableIndices = [0, 1, 2, 3];
-                    
-                    for (let i = 0; i < correctCount; i++) {
-                        const randomIdx = Math.floor(Math.random() * availableIndices.length);
-                        const pos = availableIndices.splice(randomIdx, 1)[0];
-                        nextGuess[pos] = secretCode[pos];
-                    }
-                    
-                    for (let i = 0; i < availableIndices.length; i++) {
-                        const pos = availableIndices[i];
-                        let randomColor = COLOR_NAMES[Math.floor(Math.random() * COLOR_NAMES.length)];
-                        nextGuess[pos] = randomColor;
-                    }
-                }
-                
-                if (nextGuess.join(',') === secretCode.join(',')) {
-                    let newColor = nextGuess[0];
-                    while (newColor === nextGuess[0]) {
-                        newColor = COLOR_NAMES[Math.floor(Math.random() * COLOR_NAMES.length)];
-                    }
-                    nextGuess[0] = newColor;
-                }
-                
-                systemGuesses.push({ guess: nextGuess });
-                await update(ref(db, `lobbies/${lobbyId}`), { systemGuesses: systemGuesses });
-            }
 
             createPalette();
             createPresetRow();
