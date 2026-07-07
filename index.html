@@ -1099,12 +1099,16 @@
                     timerEl.textContent = formatTime(elapsedTime);
                 } else if (gameMode === 'multi') {
                     if (isPaused && pendingTimeChange) {
-                        timerEl.textContent = pendingTimeChange.remainingTime > 0 ? formatTime(pendingTimeChange.remainingTime) : "âˆž";
+                        if (pendingTimeChange.remainingTime > 0) {
+                            timerEl.textContent = formatTime(pendingTimeChange.remainingTime);
+                        } else {
+                            timerEl.innerHTML = "&infin;";
+                        }
                         timerEl.style.color = "var(--text-color)";
                         return;
                     }
                     if (turnTimerSeconds === 0) {
-                        timerEl.textContent = "âˆž";
+                        timerEl.innerHTML = "&infin;";
                     } else {
                         const now = Date.now();
                         let remaining = Math.max(0, Math.ceil((turnEndTime - now) / 1000));
