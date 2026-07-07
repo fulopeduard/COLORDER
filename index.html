@@ -607,6 +607,17 @@
                 <button class="toggle-btn" data-value="classic">Classic</button>
             </div>
 
+            <div id="player-count-settings" style="display: none;">
+                <label style="display:block; margin-bottom: 5px;">Játékosok száma:</label>
+                <div class="button-group" id="player-count-group">
+                    <button class="toggle-btn active" data-value="2">2</button>
+                    <button class="toggle-btn" data-value="3">3</button>
+                    <button class="toggle-btn" data-value="4">4</button>
+                    <button class="toggle-btn" data-value="5">5</button>
+                    <button class="toggle-btn" data-value="6">6</button>
+                </div>
+            </div>
+
             <div id="switch-guess-settings">
                 <label style="display:block; margin-bottom: 5px;">Köridő:</label>
                 <div class="button-group" id="turn-timer-group">
@@ -721,7 +732,8 @@
                     <svg viewBox="0 0 24 24"><path d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z" /></svg>
                 </button>
             </h2>
-            <p>Várakozás a másik játékosra...</p>
+            <p>Várakozás a játékosokra...</p>
+            <p id="waiting-players-count" style="font-weight: bold; font-size: 1.2rem; color: var(--win-glow); margin-top: 10px;"></p>
             <div style="margin: 30px auto; border: 4px solid var(--hole-color); border-top: 4px solid var(--accent-color); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite;"></div>
             <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
         </div>
@@ -1224,10 +1236,10 @@
                             currentAttempt = oldAttempt;
                         }
                         
-                        const attemptsKey = myPlayerIndex === 0 ? 'player1Attempts' : 'player2Attempts';
-                        const statusKey = myPlayerIndex === 0 ? 'player1Status' : 'player2Status';
-                        const guessesKey = myPlayerIndex === 0 ? 'player1Guesses' : 'player2Guesses';
-                        const otherStatusKey = myPlayerIndex === 0 ? 'player2Status' : 'player1Status';
+                        const playerNum = myPlayerIndex + 1;
+                        const attemptsKey = `player${playerNum}Attempts`;
+                        const statusKey = `player${playerNum}Status`;
+                        const guessesKey = `player${playerNum}Guesses`;
                         
                         const lobbyRef = ref(db, `lobbies/${lobbyId}`);
                         const result = await runTransaction(lobbyRef, (lobby) => {
@@ -1240,7 +1252,6 @@
                                 if (black === CODE_LENGTH) {
                                     if (!lobby.winner) {
                                         lobby.winner = auth.currentUser.uid;
-                                        lobby.winnerIndex = myPlayerIndex;
                                         lobby.status = 'finished';
                                         lobby[statusKey] = 'won';
                                     } else {
@@ -1249,7 +1260,17 @@
                                 } else {
                                     if (lobby[attemptsKey] >= lobby.maxPlayerAttempts) {
                                         lobby[statusKey] = 'dead';
-                                        if (lobby[otherStatusKey] === 'dead' || lobby[otherStatusKey] === 'won') {
+                                        let allOthersDone = true;
+                                        for (let i = 1; i <= lobby.maxPlayersInLobby; i++) {
+                                            if (i !== playerNum) {
+                                                const s = lobby[`player${i}Status`];
+                                                if (s !== 'dead' && s !== 'won' && s !== 'lost') {
+                                                    allOthersDone = false;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                        if (allOthersDone) {
                                             lobby.status = 'finished';
                                         }
                                     }
@@ -1266,11 +1287,8 @@
                             }
                             
                             if (finalData.winner) {
-                                if (finalData.winnerIndex === myPlayerIndex) {
-                                    endGame(true, myPlayerIndex);
-                                } else {
-                                    endGame(false);
-                                }
+                                const winnerIdx = finalData.winner === auth.currentUser.uid ? myPlayerIndex : -1;
+                                endGame(winnerIdx === myPlayerIndex, winnerIdx);
                             } else if (finalData.status === 'finished') {
                                 endGame(false);
                             }
@@ -1808,6 +1826,7 @@
 
             const switchGuessSettings = document.getElementById('switch-guess-settings');
             const autoguessSettings = document.getElementById('autoguess-settings');
+            const playerCountSettings = document.getElementById('player-count-settings');
             const modeInfoBtn = document.getElementById('mode-info-btn');
             const modeInfoModal = document.getElementById('mode-info-modal');
             const closeModeInfoBtn = document.getElementById('close-mode-info-btn');
@@ -1816,18 +1835,22 @@
                 if (val === 'switch') {
                     switchGuessSettings.style.display = 'block';
                     autoguessSettings.style.display = 'none';
+                    playerCountSettings.style.display = 'none';
                 } else if (val === 'autoguess') {
                     switchGuessSettings.style.display = 'none';
                     autoguessSettings.style.display = 'block';
+                    playerCountSettings.style.display = 'block';
                 } else {
                     switchGuessSettings.style.display = 'none';
                     autoguessSettings.style.display = 'none';
+                    playerCountSettings.style.display = 'block';
                 }
             });
             setupButtonGroup('turn-timer-group');
             setupButtonGroup('autoguess-speed-group');
             setupButtonGroup('autoguess-difficulty-group');
             setupButtonGroup('autoguess-attempts-group');
+            setupButtonGroup('player-count-group');
 
             modeInfoBtn.addEventListener('click', () => {
                 modeInfoModal.classList.add('visible');
@@ -1892,28 +1915,25 @@
                         lobbyData.turnTimerSeconds = parseInt(getButtonGroupValue('turn-timer-group'));
                         lobbyData.currentTurn = 0;
                         lobbyData.turnEndTime = 0;
-                    } else if (selectedGameMode === 'classic') {
-                        lobbyData.player1Attempts = 0;
-                        lobbyData.player2Attempts = 0;
-                        lobbyData.player1Status = 'playing';
-                        lobbyData.player2Status = 'waiting';
-                        lobbyData.maxPlayerAttempts = MAX_ATTEMPTS;
-                        lobbyData.gameStartTime = Date.now();
-                        lobbyData.player1Guesses = [];
-                        lobbyData.player2Guesses = [];
                     } else {
-                        lobbyData.autoGuessSpeed = parseInt(getButtonGroupValue('autoguess-speed-group'));
-                        lobbyData.difficulty = getButtonGroupValue('autoguess-difficulty-group');
-                        lobbyData.maxPlayerAttempts = parseInt(getButtonGroupValue('autoguess-attempts-group'));
+                        const totalPlayers = parseInt(getButtonGroupValue('player-count-group')) || 2;
+                        lobbyData.maxPlayersInLobby = totalPlayers;
+                        lobbyData.playerCount = 1;
+                        
+                        lobbyData.player1Id = auth.currentUser.uid;
                         lobbyData.player1Attempts = 0;
-                        lobbyData.player2Attempts = 0;
-                        lobbyData.player1Status = 'playing';
-                        lobbyData.player2Status = 'waiting';
-                        const maxSysGuesses = MAX_ATTEMPTS - lobbyData.maxPlayerAttempts;
-                        lobbyData.systemGuesses = generateAllSystemGuesses(newSecretCode, lobbyData.difficulty, maxSysGuesses);
-                        lobbyData.gameStartTime = Date.now();
+                        lobbyData.player1Status = 'waiting';
                         lobbyData.player1Guesses = [];
-                        lobbyData.player2Guesses = [];
+                        
+                        if (selectedGameMode === 'classic') {
+                            lobbyData.maxPlayerAttempts = MAX_ATTEMPTS;
+                        } else {
+                            lobbyData.autoGuessSpeed = parseInt(getButtonGroupValue('autoguess-speed-group'));
+                            lobbyData.difficulty = getButtonGroupValue('autoguess-difficulty-group');
+                            lobbyData.maxPlayerAttempts = parseInt(getButtonGroupValue('autoguess-attempts-group'));
+                            const maxSysGuesses = MAX_ATTEMPTS - lobbyData.maxPlayerAttempts;
+                            lobbyData.systemGuesses = generateAllSystemGuesses(newSecretCode, lobbyData.difficulty, maxSysGuesses);
+                        }
                     }
                     
                     await set(ref(db, `lobbies/${code}`), lobbyData);
@@ -1935,21 +1955,71 @@
                     if(snapshot.exists()) {
                         const data = snapshot.val();
                         if(data.status === 'waiting') {
-                            const newEndTime = data.turnTimerSeconds > 0 ? Date.now() + (data.turnTimerSeconds * 1000) : 0;
-                            await update(ref(db, `lobbies/${code}`), {
-                                status: 'playing',
-                                guestId: auth.currentUser.uid,
-                                turnEndTime: newEndTime
-                            });
+                            let joinedPlayerIndex = 1;
+                            
+                            if (data.gameModeType === 'switch') {
+                                const newEndTime = data.turnTimerSeconds > 0 ? Date.now() + (data.turnTimerSeconds * 1000) : 0;
+                                await update(ref(db, `lobbies/${code}`), {
+                                    status: 'playing',
+                                    guestId: auth.currentUser.uid,
+                                    turnEndTime: newEndTime
+                                });
+                            } else {
+                                const joinResult = await runTransaction(ref(db, `lobbies/${code}`), (lobby) => {
+                                    if (lobby && lobby.status === 'waiting') {
+                                        let currentCount = lobby.playerCount || 1;
+                                        if (currentCount < lobby.maxPlayersInLobby) {
+                                            currentCount++;
+                                            lobby.playerCount = currentCount;
+                                            
+                                            const playerNum = currentCount;
+                                            lobby[`player${playerNum}Id`] = auth.currentUser.uid;
+                                            lobby[`player${playerNum}Attempts`] = 0;
+                                            lobby[`player${playerNum}Status`] = 'waiting';
+                                            lobby[`player${playerNum}Guesses`] = [];
+                                            
+                                            if (currentCount === lobby.maxPlayersInLobby) {
+                                                lobby.status = 'playing';
+                                                for (let i = 1; i <= lobby.maxPlayersInLobby; i++) {
+                                                    lobby[`player${i}Status`] = 'playing';
+                                                }
+                                                lobby.gameStartTime = Date.now();
+                                            }
+                                        }
+                                    }
+                                    return lobby;
+                                });
+                                
+                                if (joinResult.committed && joinResult.snapshot.exists()) {
+                                    const finalData = joinResult.snapshot.val();
+                                    let found = false;
+                                    for (let i = 1; i <= finalData.maxPlayersInLobby; i++) {
+                                        if (finalData[`player${i}Id`] === auth.currentUser.uid) {
+                                            joinedPlayerIndex = i - 1;
+                                            found = true;
+                                            break;
+                                        }
+                                    }
+                                    if (!found) {
+                                        alert("A szoba megtelt mialatt csatlakoztál!");
+                                        return;
+                                    }
+                                } else {
+                                    alert("Hiba történt a csatlakozás során.");
+                                    return;
+                                }
+                            }
                             
                             multiplayerMenuContainer.style.display = 'none';
                             gameContainer.style.display = 'flex';
                             gameControls.style.display = 'flex';
                             newGame();
                             lobbyId = code;
-                            myPlayerIndex = 1;
+                            myPlayerIndex = joinedPlayerIndex;
                             gameMode = 'multi';
                             document.getElementById('timer-display').classList.add('clickable');
+                            document.getElementById('display-lobby-code').textContent = code;
+                            waitingRoomModal.classList.add('visible');
                             listenToLobby();
                         } else {
                             alert("A játék már elkezdődött ebben a szobában!");
@@ -1969,7 +2039,14 @@
                     const data = snapshot.val();
                     if(!data) return;
                     
-                    if(data.status === 'playing' || data.status === 'finished' || data.status === 'abandoned') {
+                    if(data.status === 'waiting') {
+                        if (data.gameModeType !== 'switch' && data.maxPlayersInLobby) {
+                            const countEl = document.getElementById('waiting-players-count');
+                            if (countEl) {
+                                countEl.textContent = `Csatlakozott: ${data.playerCount || 1} / ${data.maxPlayersInLobby}`;
+                            }
+                        }
+                    } else if(data.status === 'playing' || data.status === 'finished' || data.status === 'abandoned') {
                         waitingRoomModal.classList.remove('visible');
                         syncGameState(data);
                     }
@@ -2063,20 +2140,18 @@
                         maxPlayerAttempts = MAX_ATTEMPTS;
                     }
                     
-                    const p1Att = data.player1Attempts || 0;
-                    const p2Att = data.player2Attempts || 0;
-                    const p1Status = data.player1Status || 'playing';
-                    const p2Status = data.player2Status || 'waiting';
+                    const playerNum = myPlayerIndex + 1;
+                    const myAttempts = data[`player${playerNum}Attempts`] || 0;
+                    const myStatus = data[`player${playerNum}Status`] || 'playing';
                     
-                    const myAttempts = myPlayerIndex === 0 ? p1Att : p2Att;
                     playerCurrentAttempt = (MAX_ATTEMPTS - maxPlayerAttempts) + myAttempts;
                     if (currentMultiMode === 'classic') {
                         currentAttempt = myAttempts;
                     }
                     updateActiveRow();
-                    isPlayerDead = (myPlayerIndex === 0 ? p1Status : p2Status) === 'dead';
+                    isPlayerDead = myStatus === 'dead';
                     
-                    const myGuesses = myPlayerIndex === 0 ? (data.player1Guesses || []) : (data.player2Guesses || []);
+                    const myGuesses = data[`player${playerNum}Guesses`] || [];
                     const firstPlayerRowIdx = MAX_ATTEMPTS - maxPlayerAttempts;
                     const firstPlayerRowEl = document.querySelector(`.guess-row[data-row='${firstPlayerRowIdx}']`);
                     const isFirstGuessRendered = firstPlayerRowEl && firstPlayerRowEl.querySelectorAll('.peg.feedback-black, .peg.feedback-white').length > 0;
@@ -2148,13 +2223,13 @@
                     if (data.status === 'finished') {
                         if (autoGuessTimer) { clearInterval(autoGuessTimer); autoGuessTimer = null; }
                         
-                        if (data.winner && (data.winnerIndex !== undefined ? data.winnerIndex !== myPlayerIndex : data.winner !== auth.currentUser.uid) && !opponentAlreadyWon) {
+                        if (data.winner && data.winner !== auth.currentUser.uid && !opponentAlreadyWon) {
                             opponentAlreadyWon = true;
                             showOpponentWonMessage();
                         } else if (!opponentAlreadyWon || isGameOver) {
                             isGameOver = true;
                             if (data.winner) {
-                                const winnerIdx = data.winnerIndex !== undefined ? data.winnerIndex : (data.winner === auth.currentUser.uid ? myPlayerIndex : 1 - myPlayerIndex);
+                                const winnerIdx = data.winner === auth.currentUser.uid ? myPlayerIndex : -1;
                                 endGame(true, winnerIdx);
                             } else {
                                 endGame(false);
