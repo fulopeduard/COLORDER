@@ -1024,13 +1024,51 @@
                 }
             }
 
+            async function leaveMultiplayerLobby(code, mode, playerIdx) {
+                try {
+                    const lobbyRef = ref(db, `lobbies/${code}`);
+                    await runTransaction(lobbyRef, (lobby) => {
+                        if (lobby) {
+                            if (mode === 'switch' || !lobby.maxPlayersInLobby || lobby.maxPlayersInLobby <= 2) {
+                                lobby.status = 'abandoned';
+                            } else {
+                                const playerNum = playerIdx + 1;
+                                lobby[`player${playerNum}Status`] = 'left';
+                                
+                                let activeCount = 0;
+                                let allOthersDone = true;
+                                for (let i = 1; i <= lobby.maxPlayersInLobby; i++) {
+                                    const s = lobby[`player${i}Status`];
+                                    if (s !== 'left') {
+                                        activeCount++;
+                                        if (s !== 'dead' && s !== 'won' && s !== 'lost') {
+                                            allOthersDone = false;
+                                        }
+                                    }
+                                }
+                                
+                                if (activeCount <= 1) {
+                                    lobby.status = 'abandoned';
+                                } else if (allOthersDone && lobby.status === 'playing') {
+                                    lobby.status = 'finished';
+                                }
+                            }
+                        }
+                        return lobby;
+                    });
+                } catch(e) {
+                    console.error("Hiba a kilépés során:", e);
+                }
+            }
+
             function newGame(isOpponentDisconnect = false) {
                 if (gameMode === 'multi') {
                     if (lobbyId && !isOpponentDisconnect) {
+                        const code = lobbyId;
+                        const mode = currentMultiMode;
+                        const playerIdx = myPlayerIndex;
+                        leaveMultiplayerLobby(code, mode, playerIdx);
                         if (unsubscribeLobby) { unsubscribeLobby(); unsubscribeLobby = null; }
-                        try {
-                            update(ref(db, `lobbies/${lobbyId}`), { status: 'abandoned' }).catch(e => console.error(e));
-                        } catch (e) {}
                     }
                     gameMode = 'local';
                     lobbyId = null;
