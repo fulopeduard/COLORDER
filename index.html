@@ -726,6 +726,19 @@
         </div>
     </div>
 
+    <div id="opponent-left-modal" class="modal-overlay">
+        <div class="modal-content" style="text-align: center;">
+            <h2 style="color: var(--accent-color); margin-bottom: 20px;">A kapcsolat megszakadt</h2>
+            <div style="display: flex; justify-content: center; margin-bottom: 20px;">
+                <svg viewBox="0 0 24 24" style="width: 60px; height: 60px; color: var(--accent-color); opacity: 0.8;">
+                    <path fill="currentColor" d="M16.56,5.44L15.11,6.89C16.84,7.94 18,9.83 18,12A6,6 0 0,1 12,18A6,6 0 0,1 6,12C6,9.83 7.16,7.94 8.88,6.88L7.44,5.44C5.36,6.88 4,9.28 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12C20,9.28 18.64,6.88 16.56,5.44M13,3H11V13H13" />
+                </svg>
+            </div>
+            <p style="font-size: 1.1rem; margin-bottom: 30px;">Az ellenfeled kilépett a játékból. A szoba bezárult.</p>
+            <button id="close-opponent-left-btn" class="main-menu-btn">Vissza a főmenübe</button>
+        </div>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -788,6 +801,7 @@
             let opponentAlreadyWon = false;
             let autoGuessSpeed = 10;
             let autoGuessDifficulty = 'medium';
+            let globalGameStartTime = 0;
             
             let isPresetVisible = false;
             let isPresetAutofill = false;
@@ -823,6 +837,14 @@
             const acceptTimeBtn = document.getElementById('accept-time-btn');
             const declineTimeBtn = document.getElementById('decline-time-btn');
             const acceptTimeText = document.getElementById('accept-time-text');
+            
+            const opponentLeftModal = document.getElementById('opponent-left-modal');
+            const closeOpponentLeftBtn = document.getElementById('close-opponent-left-btn');
+            
+            closeOpponentLeftBtn.addEventListener('click', () => {
+                opponentLeftModal.classList.remove('visible');
+                exitGameToMenu();
+            });
             
             timerDisplayContainer.addEventListener('click', () => {
                 if (gameMode !== 'multi' || isGameOver || isPaused) return;
@@ -989,11 +1011,16 @@
                 }
             }
 
-            function newGame() {
+            function newGame(isOpponentDisconnect = false) {
                 if (gameMode === 'multi') {
+                    if (lobbyId && !isOpponentDisconnect) {
+                        if (unsubscribeLobby) { unsubscribeLobby(); unsubscribeLobby = null; }
+                        try {
+                            update(ref(db, `lobbies/${lobbyId}`), { status: 'abandoned' }).catch(e => console.error(e));
+                        } catch (e) {}
+                    }
                     gameMode = 'local';
                     lobbyId = null;
-                    if (unsubscribeLobby) { unsubscribeLobby(); unsubscribeLobby = null; }
                     document.getElementById('waiting-room-modal').classList.remove('visible');
                 }
                 const timerDisplayContainer = document.getElementById('timer-display');
@@ -1008,7 +1035,7 @@
                 undoButton.removeEventListener('click', triggerRematch);
                 setupUndoButtonListeners();
 
-                isChecking = false; isGameOver = false; currentAttempt = 0; playerCurrentAttempt = 0; opponentAlreadyWon = false;
+                isChecking = false; isGameOver = false; currentAttempt = 0; playerCurrentAttempt = 0; opponentAlreadyWon = false; isPlayerDead = false;
                 currentGuess = Array(CODE_LENGTH).fill(null);
                 selectedHoleIndex = null; actionHistory = [];
                 clearColorHighlight();
@@ -1098,31 +1125,41 @@
                     elapsedTime++;
                     timerEl.textContent = formatTime(elapsedTime);
                 } else if (gameMode === 'multi') {
-                    if (isPaused && pendingTimeChange) {
-                        if (pendingTimeChange.remainingTime > 0) {
-                            timerEl.textContent = formatTime(pendingTimeChange.remainingTime);
+                    if (currentMultiMode === 'autoguess') {
+                        if (globalGameStartTime > 0) {
+                            elapsedTime = Math.floor((Date.now() - globalGameStartTime) / 1000);
                         } else {
-                            timerEl.innerHTML = "&infin;";
+                            elapsedTime++;
                         }
+                        timerEl.textContent = formatTime(elapsedTime);
                         timerEl.style.color = "var(--text-color)";
-                        return;
-                    }
-                    if (turnTimerSeconds === 0) {
-                        timerEl.innerHTML = "&infin;";
                     } else {
-                        const now = Date.now();
-                        let remaining = Math.max(0, Math.ceil((turnEndTime - now) / 1000));
-                        timerEl.textContent = formatTime(remaining);
-                        
-                        if (currentTurn === myPlayerIndex && remaining <= 10 && remaining > 0) {
-                            timerEl.style.color = "#e74c3c";
-                        } else {
+                        if (isPaused && pendingTimeChange) {
+                            if (pendingTimeChange.remainingTime > 0) {
+                                timerEl.textContent = formatTime(pendingTimeChange.remainingTime);
+                            } else {
+                                timerEl.innerHTML = "&infin;";
+                            }
                             timerEl.style.color = "var(--text-color)";
+                            return;
                         }
+                        if (turnTimerSeconds === 0) {
+                            timerEl.innerHTML = "&infin;";
+                        } else {
+                            const now = Date.now();
+                            let remaining = Math.max(0, Math.ceil((turnEndTime - now) / 1000));
+                            timerEl.textContent = formatTime(remaining);
+                            
+                            if (currentTurn === myPlayerIndex && remaining <= 10 && remaining > 0) {
+                                timerEl.style.color = "#e74c3c";
+                            } else {
+                                timerEl.style.color = "var(--text-color)";
+                            }
 
-                        if (remaining === 0 && currentTurn === myPlayerIndex && !isChecking && !isGameOver && !isPaused) {
-                            isChecking = true; 
-                            handleTimeout();
+                            if (remaining === 0 && currentTurn === myPlayerIndex && !isChecking && !isGameOver && !isPaused) {
+                                isChecking = true; 
+                                handleTimeout();
+                            }
                         }
                     }
                 }
@@ -1733,8 +1770,7 @@
                 gameContainer.style.display = 'none';
                 gameControls.style.display = 'none';
                 mainMenuContainer.style.display = 'flex';
-                if(unsubscribeLobby) { unsubscribeLobby(); unsubscribeLobby = null; }
-                if(autoGuessTimer) { clearInterval(autoGuessTimer); autoGuessTimer = null; }
+                newGame();
             }
             
             document.getElementById('menu-back-from-multiplayer-btn').addEventListener('click', () => {
@@ -1915,7 +1951,7 @@
                     const data = snapshot.val();
                     if(!data) return;
                     
-                    if(data.status === 'playing' || data.status === 'finished') {
+                    if(data.status === 'playing' || data.status === 'finished' || data.status === 'abandoned') {
                         waitingRoomModal.classList.remove('visible');
                         syncGameState(data);
                     }
@@ -1972,10 +2008,16 @@
                 setupUndoButtonListeners();
                 
                 updateButtonStates();
+                startTimer();
             }
 
             async function syncGameState(data) {
                 if (gameMode !== 'multi') return;
+                
+                if (data.status === 'abandoned') {
+                    opponentLeftModal.classList.add('visible');
+                    return;
+                }
                 
                 let isNewGame = false;
                 if (secretCode && data.secretCode && secretCode.join(',') !== data.secretCode.join(',')) {
@@ -1983,18 +2025,7 @@
                 }
                 
                 if (isNewGame) {
-                    if (!isGameOver && currentMultiMode === 'autoguess') {
-                        gameOverText.textContent = "Vesztettél! Az ellenfél hamarabb megfejtette a színkombinációt.";
-                        gameOverArea.style.display = 'block';
-                        gameOverArea.classList.remove('hidden');
-                        setTimeout(() => {
-                            gameOverArea.style.display = 'none';
-                            startMultiplayerRematch();
-                        }, 2500);
-                        return; // Delay the reset so the user can read the message
-                    } else {
-                        startMultiplayerRematch();
-                    }
+                    startMultiplayerRematch();
                 } else if (data.status === 'playing' && !data.winner && isGameOver) {
                     startMultiplayerRematch();
                 }
@@ -2003,6 +2034,8 @@
                 secretCode = data.secretCode;
                 
                 if (currentMultiMode === 'autoguess') {
+                    turnTimerSeconds = 0;
+                    turnEndTime = 0;
                     autoGuessSpeed = data.autoGuessSpeed !== undefined ? data.autoGuessSpeed : 10;
                     autoGuessDifficulty = data.difficulty || 'medium';
                     maxPlayerAttempts = parseInt(data.maxPlayerAttempts) || 3;
@@ -2045,6 +2078,7 @@
                     const systemGuesses = data.systemGuesses || [];
                     const maxSystemGuesses = MAX_ATTEMPTS - maxPlayerAttempts;
                     const gameStartTime = data.gameStartTime || Date.now();
+                    globalGameStartTime = gameStartTime;
                     const intervalTime = autoGuessSpeed === 0 ? (4000 / maxSystemGuesses) : autoGuessSpeed * 1000;
                     
                     if (data.status === 'playing' && !data.winner) {
