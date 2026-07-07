@@ -498,23 +498,13 @@
             <h2>Új időkorlát javaslat!</h2>
             <p id="accept-time-text" style="margin-bottom: 20px;">Az ellenfeled új időkorlátot javasolt: X perc. Elfogadod?</p>
             <div style="display: flex; gap: 10px; justify-content: space-between;">
-                <button id="accept-time-btn" class="menu-btn" style="flex: 1;">Elfogad</button>
-                <button id="decline-time-btn" class="menu-btn" style="flex: 1; background-color: var(--accent-color);">Elutasít</button>
+                <button id="accept-time-btn" class="main-menu-btn" style="flex: 1;">Elfogad</button>
+                <button id="decline-time-btn" class="main-menu-btn" style="flex: 1; background-color: var(--accent-color);">Elutasít</button>
             </div>
         </div>
     </div>
 
-    <!-- Opponent Won Modal -->
-    <div id="opponent-won-modal" class="modal-overlay">
-        <div class="modal-content" style="text-align: center;">
-            <h2>Vesztettél!</h2>
-            <p>Az ellenfél hamarább fejezte be a játékot.</p>
-            <div style="display: flex; gap: 10px; flex-direction: column; justify-content: center; margin-top: 20px;">
-                <button id="modal-continue-btn" class="menu-btn">Tovább játszok</button>
-                <button id="modal-show-solution-btn" class="menu-btn">Helyes színkombináció mutatása</button>
-            </div>
-        </div>
-    </div>
+    
 
     <div id="info-modal" class="modal-overlay">
         <div class="modal-content">
@@ -634,6 +624,7 @@
                     <button class="toggle-btn" data-value="15">Lassú</button>
                     <button class="toggle-btn" data-value="10">Közepes</button>
                     <button class="toggle-btn active" data-value="5">Gyors</button>
+                    <button class="toggle-btn" data-value="0">Instant</button>
                 </div>
 
                 <label style="display:block; margin-bottom: 5px;">Gép nehézsége:</label>
@@ -771,7 +762,7 @@
             };
             const COLOR_NAMES = Object.keys(COLORS);
             
-            const yinyangIconHTML = `<span style="font-size: 1.8rem; line-height: 1;">☯</span>`;
+            const themeIconSVG = `<svg viewBox="0 0 24 24"><path fill="currentColor" d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4.18C16.31,4.18 19.82,7.69 19.82,12C19.82,16.31 16.31,19.82 12,19.82V4.18Z"/></svg>`;
             const undoIconSVG = `<svg viewBox="0 0 24 24"><path d="M12.5,8C9.85,8 7.45,9 5.6,10.6L2,7V16H11L7.38,12.38C8.77,11.22 10.54,10.5 12.5,10.5C16.04,10.5 19.05,12.81 20.1,16L22.47,15.22C21.08,11.03 17.15,8 12.5,8Z" /></svg>`;
             const restartIconSVG = `<svg viewBox="0 0 24 24"><path d="M12,5V1L7,6L12,11V8C15.31,8 18,10.69 18,14C18,17.31 15.31,20 12,20C8.69,20 6,17.31 6,14H4C4,18.42 7.58,22 12,22C16.42,22 20,18.42 20,14C20,9.58 16.42,6 12,6V5Z" /></svg>`;
 
@@ -914,6 +905,33 @@
             const settingsPanel = document.getElementById('settings-panel');
 
 
+            async function triggerRematch() {
+                if (!lobbyId || gameMode !== 'multi') return;
+                try {
+                    undoButton.disabled = true;
+                    const newCode = Array.from({ length: CODE_LENGTH }, () => COLOR_NAMES[Math.floor(Math.random() * COLOR_NAMES.length)]);
+                    const updates = {
+                        status: 'playing',
+                        secretCode: newCode,
+                        winner: null,
+                        winnerIndex: null,
+                        player1Attempts: 0,
+                        player2Attempts: 0,
+                        player1Status: 'playing',
+                        player2Status: 'playing',
+                        currentTurn: 0,
+                        systemGuesses: [],
+                        guesses: [],
+                        timerChangeRequest: null,
+                        turnEndTime: turnTimerSeconds > 0 ? Date.now() + (turnTimerSeconds * 1000) : 0
+                    };
+                    await update(ref(db, `lobbies/${lobbyId}`), updates);
+                } catch (e) {
+                    console.error("Hiba a rematch során", e);
+                    setTimeout(() => { undoButton.disabled = false; }, 1500);
+                }
+            }
+
             function newGame() {
                 if (gameMode === 'multi') {
                     gameMode = 'local';
@@ -928,6 +946,7 @@
                 undoButton.innerHTML = undoIconSVG;
                 undoButton.title = 'Visszavonás (rövid nyomás), Új játék (hosszú nyomás)';
                 undoButton.removeEventListener('click', newGame);
+                undoButton.removeEventListener('click', triggerRematch);
                 setupUndoButtonListeners();
 
                 isChecking = false; isGameOver = false; currentAttempt = 0; playerCurrentAttempt = 0; opponentAlreadyWon = false;
@@ -964,7 +983,7 @@
                         if (winnerIndex === myPlayerIndex) {
                             gameOverText.textContent = opponentAlreadyWon ? "Megfejtetted, de az ellenfél gyorsabb volt!" : "Győzelem!";
                         } else {
-                            gameOverText.textContent = "Vesztettél! Az ellenfél nyert.";
+                            gameOverText.textContent = "Vesztettél! Az ellenfél hamarabb megfejtette a színkombinációt.";
                         }
                     }
                     
@@ -998,23 +1017,19 @@
 
                 removeUndoButtonListeners();
                 undoButton.innerHTML = restartIconSVG;
-                undoButton.title = gameMode === 'multi' ? 'Kilépés a Lobbyból' : 'Újrakezdés';
-                undoButton.addEventListener('click', newGame);
-                undoButton.disabled = false;
+                if (gameMode === 'multi') {
+                    undoButton.title = 'Rematch (Új játék)';
+                    undoButton.addEventListener('click', triggerRematch);
+                } else {
+                    undoButton.title = 'Újrakezdés';
+                    undoButton.addEventListener('click', newGame);
+                }
+                setTimeout(() => { undoButton.disabled = false; }, 1500);
             }
 
             function showOpponentWonMessage() {
-                const modal = document.getElementById('opponent-won-modal');
-                modal.classList.add('visible');
-                
-                document.getElementById('modal-continue-btn').onclick = () => {
-                    modal.classList.remove('visible');
-                };
-                document.getElementById('modal-show-solution-btn').onclick = () => {
-                    modal.classList.remove('visible');
-                    isGameOver = true;
-                    endGame(true, 1 - myPlayerIndex);
-                };
+                isGameOver = true;
+                endGame(true, 1 - myPlayerIndex);
             }
 
             function formatTime(seconds) { const m = Math.floor(seconds / 60).toString().padStart(2, '0'); const s = (seconds % 60).toString().padStart(2, '0'); return `${m}:${s}`; }
@@ -1025,12 +1040,12 @@
                     timerEl.textContent = formatTime(elapsedTime);
                 } else if (gameMode === 'multi') {
                     if (isPaused && pendingTimeChange) {
-                        timerEl.textContent = pendingTimeChange.remainingTime > 0 ? formatTime(pendingTimeChange.remainingTime) : "∞";
+                        timerEl.textContent = pendingTimeChange.remainingTime > 0 ? formatTime(pendingTimeChange.remainingTime) : "âˆž";
                         timerEl.style.color = "var(--text-color)";
                         return;
                     }
                     if (turnTimerSeconds === 0) {
-                        timerEl.textContent = "∞";
+                        timerEl.textContent = "âˆž";
                     } else {
                         const now = Date.now();
                         let remaining = Math.max(0, Math.ceil((turnEndTime - now) / 1000));
@@ -1196,29 +1211,34 @@
                 }))
             }
 
-            async function animateFeedbackDisplay(black, white, overrideRowEl = null) {
+            async function animateFeedbackDisplay(black, white, overrideRowEl = null, fastAnimation = false) {
                 const rowEl = overrideRowEl || document.querySelector(`.guess-row[data-row='${currentAttempt}']`);
                 if (!rowEl) return;
+                
+                const pegDelay = fastAnimation ? 30 : 150;
+                const endDelay = fastAnimation ? 50 : 300;
                 
                 const pegEls = rowEl.querySelectorAll(".peg");
                 const feedbackClasses = [...Array(black).fill("feedback-black"), ...Array(white).fill("feedback-white")];
                 for (let i = 0; i < feedbackClasses.length; i++) {
-                    await new Promise(resolve => setTimeout(resolve, 150));
+                    await new Promise(resolve => setTimeout(resolve, pegDelay));
                     pegEls[i].classList.add(feedbackClasses[i], "reveal-anim");
                 }
                 
-                await new Promise(resolve => setTimeout(resolve, 300));
+                await new Promise(resolve => setTimeout(resolve, endDelay));
             }
 
-            async function animateSystemGuess(guessArr, rowIndex) {
+            async function animateSystemGuess(guessArr, rowIndex, fastAnimation = false) {
                 const rowEl = document.querySelector(`.guess-row[data-row='${rowIndex}']`);
                 if (!rowEl) return;
+                
+                const marbleDelay = fastAnimation ? 40 : 250;
                 
                 const partialGuess = Array(CODE_LENGTH).fill(null);
                 for (let i = 0; i < CODE_LENGTH; i++) {
                     partialGuess[i] = guessArr[i];
                     updateGuessDisplay(rowEl, partialGuess);
-                    await new Promise(r => setTimeout(r, 250));
+                    await new Promise(r => setTimeout(r, marbleDelay));
                 }
                 
                 const savedCurrentGuess = [...currentGuess];
@@ -1226,7 +1246,7 @@
                 const { black, white } = evaluateGuess();
                 currentGuess = savedCurrentGuess;
                 
-                await animateFeedbackDisplay(black, white, rowEl);
+                await animateFeedbackDisplay(black, white, rowEl, fastAnimation);
             }
             
             function getActiveHolesContainer() {
@@ -1251,13 +1271,17 @@
                     }
                     
                     const turnIndicator = document.getElementById('turn-indicator');
-                    turnIndicator.style.display = 'block';
-                    if (isPlayerDead || playerCurrentAttempt >= MAX_ATTEMPTS) {
-                        turnIndicator.textContent = "Kiestél!";
-                        turnIndicator.style.color = "#e74c3c";
+                    if (isGameOver) {
+                        turnIndicator.style.display = 'none';
                     } else {
-                        turnIndicator.textContent = "Tippelj te is!";
-                        turnIndicator.style.color = "var(--win-glow)";
+                        turnIndicator.style.display = 'block';
+                        if (isPlayerDead || playerCurrentAttempt >= MAX_ATTEMPTS) {
+                            turnIndicator.textContent = "Kiestél!";
+                            turnIndicator.style.color = "#e74c3c";
+                        } else {
+                            turnIndicator.textContent = "Tippelj te is!";
+                            turnIndicator.style.color = "var(--win-glow)";
+                        }
                     }
                     return;
                 }
@@ -1387,7 +1411,7 @@
             
             const savedTheme=localStorage.getItem("szinozonTheme")||"dark"; 
             if(savedTheme === 'light') document.body.classList.add('light-theme');
-            themeToggleButton.innerHTML = yinyangIconHTML;
+            themeToggleButton.innerHTML = themeIconSVG;
 
             const savedEffects = localStorage.getItem('szinozonEffects'); 
             effectsEnabled = savedEffects === 'on';
@@ -1841,13 +1865,61 @@
                 actionHistory = [];
             }
 
+            function startMultiplayerRematch() {
+                isChecking = false; isGameOver = false; currentAttempt = 0; playerCurrentAttempt = 0; opponentAlreadyWon = false;
+                currentGuess = Array(CODE_LENGTH).fill(null);
+                selectedHoleIndex = null; actionHistory = [];
+                clearColorHighlight();
+                gameOverArea.style.display = 'none'; 
+                const oldWinRow = document.querySelector('.win-row');
+                if (oldWinRow) oldWinRow.classList.remove('win-row');
+                presetGuess = Array(CODE_LENGTH).fill(null);
+                updatePresetDisplay();
+                gameBoard.innerHTML = '';
+                createBoard();
+                updateActiveRow();
+                solutionDisplay.innerHTML = '';
+                document.getElementById('solution-display').style.display = 'none';
+
+                undoButton.innerHTML = undoIconSVG;
+                undoButton.title = 'Visszavonás (rövid nyomás), Új játék (hosszú nyomás)';
+                undoButton.removeEventListener('click', newGame);
+                undoButton.removeEventListener('click', triggerRematch);
+                setupUndoButtonListeners();
+                
+                updateButtonStates();
+            }
+
             async function syncGameState(data) {
                 if (gameMode !== 'multi') return;
+                
+                let isNewGame = false;
+                if (secretCode && data.secretCode && secretCode.join(',') !== data.secretCode.join(',')) {
+                    isNewGame = true;
+                }
+                
+                if (isNewGame) {
+                    if (!isGameOver && currentMultiMode === 'autoguess') {
+                        gameOverText.textContent = "Vesztettél! Az ellenfél hamarabb megfejtette a színkombinációt.";
+                        gameOverArea.style.display = 'block';
+                        gameOverArea.classList.remove('hidden');
+                        setTimeout(() => {
+                            gameOverArea.style.display = 'none';
+                            startMultiplayerRematch();
+                        }, 2500);
+                        return; // Delay the reset so the user can read the message
+                    } else {
+                        startMultiplayerRematch();
+                    }
+                } else if (data.status === 'playing' && !data.winner && isGameOver) {
+                    startMultiplayerRematch();
+                }
+                
                 currentMultiMode = data.gameModeType || 'switch';
                 secretCode = data.secretCode;
                 
                 if (currentMultiMode === 'autoguess') {
-                    autoGuessSpeed = data.autoGuessSpeed || 10;
+                    autoGuessSpeed = data.autoGuessSpeed !== undefined ? data.autoGuessSpeed : 10;
                     autoGuessDifficulty = data.difficulty || 'medium';
                     maxPlayerAttempts = parseInt(data.maxPlayerAttempts) || 3;
                     
@@ -1865,9 +1937,10 @@
                         const systemGuesses = data.systemGuesses || [];
                         const maxSystemGuesses = MAX_ATTEMPTS - maxPlayerAttempts;
                         if (myPlayerIndex === 0 && !autoGuessTimer && systemGuesses.length < maxSystemGuesses) {
+                            const intervalTime = autoGuessSpeed === 0 ? (4000 / maxSystemGuesses) : autoGuessSpeed * 1000;
                             autoGuessTimer = setInterval(() => {
                                 generateAndPushSystemGuess();
-                            }, autoGuessSpeed * 1000);
+                            }, intervalTime);
                         } else if (systemGuesses.length >= maxSystemGuesses && autoGuessTimer) {
                             clearInterval(autoGuessTimer);
                             autoGuessTimer = null;
@@ -1879,7 +1952,7 @@
                             }
                             const latestGuess = systemGuesses[systemGuesses.length - 1];
                             currentAttempt = systemGuesses.length;
-                            animateSystemGuess(latestGuess.guess, systemGuesses.length - 1);
+                            animateSystemGuess(latestGuess.guess, systemGuesses.length - 1, autoGuessSpeed === 0);
                         }
                     } else if (data.status === 'finished') {
                         if (autoGuessTimer) { clearInterval(autoGuessTimer); autoGuessTimer = null; }
