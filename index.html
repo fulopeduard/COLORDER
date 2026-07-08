@@ -457,8 +457,11 @@
                     </button>
                  </div>
             </div>
-            <div id="preset-area" style="display: none; align-items: center; justify-content: center; min-height: 38px; margin-bottom: 15px; width: 100%;">
+            <div id="preset-area" style="display: none; align-items: center; justify-content: center; min-height: 38px; margin-bottom: 15px; width: 100%; gap: 10px;">
                 <div id="preset-row" class="guess-row" style="margin-bottom: 0;"></div>
+                <button id="autofill-toggle-btn" class="control-btn" style="width: 38px; height: 38px; display: none;" title="Automatikus kitöltés be/ki">
+                    <svg viewBox="0 0 24 24"><path d="M7,2V13H10V22L17,10H13L17,2H7Z" /></svg>
+                </button>
                 <div id="player-count-display" class="guess-row" style="display: none; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem; color: var(--text-color); width: 100%; height: 38px; border: 2px dashed var(--accent-color); border-radius: 20px; background: rgba(0,0,0,0.1); margin-bottom: 0;">
                     <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: var(--accent-color); margin-right: 10px;"><path d="M12,5.5A3.5,3.5 0 0,1 15.5,9A3.5,3.5 0 0,1 12,12.5A3.5,3.5 0 0,1 8.5,9A3.5,3.5 0 0,1 12,5.5M5,8C5.56,8 6.08,8.15 6.53,8.42C6.38,9.85 6.8,11.27 7.66,12.38C7.16,13.34 6.16,14 5,14A3,3 0 0,1 2,11A3,3 0 0,1 5,8M19,8A3,3 0 0,1 22,11A3,3 0 0,1 19,14C17.84,14 16.84,13.34 16.34,12.38C17.2,11.27 17.62,9.85 17.47,8.42C17.92,8.15 18.44,8 19,8M5.5,18.25C5.5,16.18 8.41,14.5 12,14.5C15.59,14.5 18.5,16.18 18.5,18.25V20H5.5V18.25M0,20V18.5C0,17.11 1.89,15.94 4.45,15.6C3.86,16.28 3.5,17.22 3.5,18.25V20H0M24,20H20.5V18.25C20.5,17.22 20.14,16.28 19.55,15.6C22.11,15.94 24,17.11 24,18.5V20Z" /></svg>
                     <span id="player-count-text">? / ?</span>
@@ -804,6 +807,8 @@
             const themeIconSVG = `<svg viewBox="0 0 24 24"><path fill="currentColor" d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4.18C16.31,4.18 19.82,7.69 19.82,12C19.82,16.31 16.31,19.82 12,19.82V4.18Z"/></svg>`;
             const undoIconSVG = `<svg viewBox="0 0 24 24"><path d="M12.5,8C9.85,8 7.45,9 5.6,10.6L2,7V16H11L7.38,12.38C8.77,11.22 10.54,10.5 12.5,10.5C16.04,10.5 19.05,12.81 20.1,16L22.47,15.22C21.08,11.03 17.15,8 12.5,8Z" /></svg>`;
             const restartIconSVG = `<svg viewBox="0 0 24 24"><path d="M12,5V1L7,6L12,11V8C15.31,8 18,10.69 18,14C18,17.31 15.31,20 12,20C8.69,20 6,17.31 6,14H4C4,18.42 7.58,22 12,22C16.42,22 20,18.42 20,14C20,9.58 16.42,6 12,6V5Z" /></svg>`;
+            const presetIconSVG = `<svg viewBox="0 0 24 24"><path d="M16,12V4H17V2H7V4H8V12L6,14V16H11.2V22H12.8V16H18V14L16,12Z" /></svg>`;
+            const playerIconSVG = `<svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: currentColor; margin-right: 5px;"><path d="M12,5.5A3.5,3.5 0 0,1 15.5,9A3.5,3.5 0 0,1 12,12.5A3.5,3.5 0 0,1 8.5,9A3.5,3.5 0 0,1 12,5.5M5,8C5.56,8 6.08,8.15 6.53,8.42C6.38,9.85 6.8,11.27 7.66,12.38C7.16,13.34 6.16,14 5,14A3,3 0 0,1 2,11A3,3 0 0,1 5,8M19,8A3,3 0 0,1 22,11A3,3 0 0,1 19,14C17.84,14 16.84,13.34 16.34,12.38C17.2,11.27 17.62,9.85 17.47,8.42C17.92,8.15 18.44,8 19,8M5.5,18.25C5.5,16.18 8.41,14.5 12,14.5C15.59,14.5 18.5,16.18 18.5,18.25V20H5.5V18.25M0,20V18.5C0,17.11 1.89,15.94 4.45,15.6C3.86,16.28 3.5,17.22 3.5,18.25V20H0M24,20H20.5V18.25C20.5,17.22 20.14,16.28 19.55,15.6C22.11,15.94 24,17.11 24,18.5V20Z" /></svg>`;
 
             let gameMode = 'local';
             let lobbyId = null;
@@ -845,6 +850,7 @@
             const themeToggleButton = document.getElementById('theme-toggle-btn');
             const effectsToggleButton = document.getElementById('effects-toggle-btn');
             const presetToggleButton = document.getElementById('preset-toggle-btn');
+            const autofillToggleBtn = document.getElementById('autofill-toggle-btn');
             const gameOverArea = document.getElementById('game-over-area');
             const gameOverText = document.getElementById('game-over-text');
             const solutionDisplay = document.getElementById('solution-display');
@@ -1077,11 +1083,11 @@
             function newGame(isOpponentDisconnect = false) {
                 if (gameMode === 'multi') {
                     if (lobbyId && !isOpponentDisconnect) {
+                        if (unsubscribeLobby) { unsubscribeLobby(); unsubscribeLobby = null; }
                         const code = lobbyId;
                         const mode = currentMultiMode;
                         const playerIdx = myPlayerIndex;
                         leaveMultiplayerLobby(code, mode, playerIdx);
-                        if (unsubscribeLobby) { unsubscribeLobby(); unsubscribeLobby = null; }
                     }
                     gameMode = 'local';
                     lobbyId = null;
@@ -1613,16 +1619,34 @@
                 localStorage.setItem('szinozonPresetVisible', isPresetVisible);
                 
                 if (gameMode === 'multi' && multiDisplayPreference === 'players') {
-                    document.getElementById('preset-row').style.display = 'none';
-                    document.getElementById('player-count-display').style.display = 'flex';
+                    document.getElementById('preset-row').style.display = isPresetVisible ? 'flex' : 'none';
+                    document.getElementById('player-count-display').style.display = 'none';
+                    presetArea.style.display = isPresetVisible ? 'flex' : 'none';
+                    autofillToggleBtn.style.display = isPresetVisible ? 'flex' : 'none';
+                    
+                    const countSpan = document.getElementById('player-count-text');
+                    const countText = countSpan ? countSpan.textContent : "? / ?";
+                    presetToggleButton.innerHTML = `<div style="display:flex; align-items:center;">${playerIconSVG}<span id="btn-player-count" style="font-weight:bold;">${countText}</span></div>`;
+                    presetToggleButton.style.width = 'auto';
+                    presetToggleButton.style.padding = '0 15px';
+                    presetToggleButton.style.borderRadius = '25px';
+                    presetToggleButton.classList.remove('active');
+                    presetToggleButton.title = "Játékosok száma (hosszú nyomás: minta sor)";
                 } else {
                     document.getElementById('preset-row').style.display = 'flex';
+                    autofillToggleBtn.style.display = 'flex';
                     document.getElementById('player-count-display').style.display = 'none';
+                    presetToggleButton.innerHTML = presetIconSVG;
+                    presetToggleButton.style.width = '50px';
+                    presetToggleButton.style.padding = '0';
+                    presetToggleButton.style.borderRadius = '50%';
+                    presetToggleButton.title = "Minta sor ki/be (rövid nyomás), Automatikus kitöltés (hosszú nyomás)";
                 }
             }
 
             function updatePresetAutofillUI() {
                 presetRow.classList.toggle('preset-autofill', isPresetAutofill);
+                autofillToggleBtn.classList.toggle('active', isPresetAutofill);
                 localStorage.setItem('szinozonPresetAutofill', isPresetAutofill);
             }
 
@@ -1747,8 +1771,28 @@
 
             setupUndoButtonListeners();
 
-            const handlePresetShortPress = () => { isPresetVisible = !isPresetVisible; updatePresetVisibilityUI(); };
-            const handlePresetLongPress = () => { if(isPresetVisible) { isPresetAutofill = !isPresetAutofill; updatePresetAutofillUI(); }};
+            const isPlayersMode = () => gameMode === 'multi' && multiDisplayPreference === 'players';
+
+            const handlePresetShortPress = () => { 
+                if (isPlayersMode()) return;
+                isPresetVisible = !isPresetVisible; 
+                if (isPresetVisible) { isPresetAutofill = false; updatePresetAutofillUI(); }
+                updatePresetVisibilityUI(); 
+            };
+            const handlePresetLongPress = () => { 
+                if (isPlayersMode()) {
+                    isPresetVisible = !isPresetVisible;
+                    if (isPresetVisible) { isPresetAutofill = false; updatePresetAutofillUI(); }
+                    updatePresetVisibilityUI();
+                } else {
+                    // Do nothing on long press in classic mode since there's a dedicated button now.
+                    // Or we could keep it for backwards compatibility:
+                    if(isPresetVisible) { 
+                        isPresetAutofill = !isPresetAutofill; 
+                        updatePresetAutofillUI(); 
+                    }
+                }
+            };
             const startPresetHold = (e) => { if (e.type === 'touchstart') e.preventDefault(); presetHoldTimer = setTimeout(() => { presetHoldTimer = null; handlePresetLongPress(); }, 600); };
             const endPresetHold = () => { if (presetHoldTimer) { clearTimeout(presetHoldTimer); presetHoldTimer = null; handlePresetShortPress(); } };
             const cancelPresetHold = () => { if (presetHoldTimer) { clearTimeout(presetHoldTimer); presetHoldTimer = null; } };
@@ -1757,6 +1801,11 @@
             presetToggleButton.addEventListener('mouseleave', cancelPresetHold);
             presetToggleButton.addEventListener('touchstart', startPresetHold, { passive: false });
             presetToggleButton.addEventListener('touchend', endPresetHold);
+            
+            autofillToggleBtn.addEventListener('click', () => {
+                isPresetAutofill = !isPresetAutofill;
+                updatePresetAutofillUI();
+            });
 
             checkButton.addEventListener('click', handleCheck);
             newGameButton.addEventListener('click', newGame);
@@ -2239,7 +2288,10 @@
                     for (let i = 1; i <= data.maxPlayersInLobby; i++) {
                         if (data[`player${i}Status`] !== 'left') activeCount++;
                     }
-                    lobbyCountSpan.textContent = `${activeCount} / ${data.maxPlayersInLobby}`;
+                    const textContent = `${activeCount} / ${data.maxPlayersInLobby}`;
+                    if (lobbyCountSpan) lobbyCountSpan.textContent = textContent;
+                    const btnPlayerCount = document.getElementById('btn-player-count');
+                    if (btnPlayerCount) btnPlayerCount.textContent = textContent;
                 }
                 updatePresetVisibilityUI();
                 
