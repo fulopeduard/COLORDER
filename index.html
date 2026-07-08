@@ -60,6 +60,9 @@
         }
         /* --- EDDIG TART A VÁLTOZÁS --- */
         
+        body.switch-mode #game-board { gap: 2px; }
+        body.switch-mode .guess-row { gap: 4px; padding: 2px; }
+
         body.dragging, body.dragging * { cursor: grabbing !important; }
 
         .game-container { display: flex; flex-direction: column; align-items: center; gap: 15px; }
@@ -1080,6 +1083,7 @@
                     gameMode = 'local';
                     lobbyId = null;
                     MAX_ATTEMPTS = 11;
+                    document.body.classList.remove('switch-mode');
                     document.getElementById('waiting-room-modal').classList.remove('visible');
                 }
                 const timerDisplayContainer = document.getElementById('timer-display');
@@ -2250,6 +2254,12 @@
                 
                 currentMultiMode = data.gameModeType || 'switch';
                 MAX_ATTEMPTS = (currentMultiMode === 'switch') ? 12 : 11;
+
+                if (currentMultiMode === 'switch') {
+                    document.body.classList.add('switch-mode');
+                } else {
+                    document.body.classList.remove('switch-mode');
+                }
 
                 if (gameBoard.children.length !== MAX_ATTEMPTS) {
                     gameBoard.innerHTML = '';
