@@ -2250,6 +2250,13 @@
                 
                 currentMultiMode = data.gameModeType || 'switch';
                 MAX_ATTEMPTS = (currentMultiMode === 'switch') ? 12 : 11;
+
+                if (gameBoard.children.length !== MAX_ATTEMPTS) {
+                    gameBoard.innerHTML = '';
+                    createBoard();
+                    updateActiveRow();
+                }
+
                 secretCode = data.secretCode;
                 
                 if (currentMultiMode === 'autoguess' || currentMultiMode === 'classic') {
