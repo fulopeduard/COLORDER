@@ -779,7 +779,7 @@
         signInAnonymously(auth).then(() => { isFirebaseReady = true; }).catch((error) => { console.error("Firebase Auth Error:", error); });
         document.addEventListener('DOMContentLoaded', () => {
             const CODE_LENGTH = 4;
-            const MAX_ATTEMPTS = 11;
+            let MAX_ATTEMPTS = 11;
             const COLORS = {
                 red:    "radial-gradient(circle at 12px 12px, #ff7b7b, #c81d1d)",
                 gray:   "radial-gradient(circle at 12px 12px, #cccccc, #888888)",
@@ -1015,7 +1015,7 @@
                         player2Attempts: 0,
                         player1Status: 'playing',
                         player2Status: 'playing',
-                        currentTurn: 0,
+                        currentTurn: 1 - currentTurn,
                         systemGuesses: newSystemGuesses,
                         gameStartTime: Date.now(),
                         guesses: [],
@@ -1079,6 +1079,7 @@
                     }
                     gameMode = 'local';
                     lobbyId = null;
+                    MAX_ATTEMPTS = 11;
                     document.getElementById('waiting-room-modal').classList.remove('visible');
                 }
                 const timerDisplayContainer = document.getElementById('timer-display');
@@ -2020,7 +2021,7 @@
 
                     if (selectedGameMode === 'switch') {
                         lobbyData.turnTimerSeconds = parseInt(getButtonGroupValue('turn-timer-group'));
-                        lobbyData.currentTurn = 0;
+                        lobbyData.currentTurn = Math.random() < 0.5 ? 0 : 1;
                         lobbyData.turnEndTime = 0;
                     } else {
                         const totalPlayers = parseInt(getButtonGroupValue('player-count-group')) || 2;
@@ -2248,6 +2249,7 @@
                 updatePresetVisibilityUI();
                 
                 currentMultiMode = data.gameModeType || 'switch';
+                MAX_ATTEMPTS = (currentMultiMode === 'switch') ? 12 : 11;
                 secretCode = data.secretCode;
                 
                 if (currentMultiMode === 'autoguess' || currentMultiMode === 'classic') {
