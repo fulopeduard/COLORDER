@@ -65,7 +65,7 @@
 
         body.dragging, body.dragging * { cursor: grabbing !important; }
 
-        .game-container { display: flex; flex-direction: column; align-items: center; gap: 15px; }
+        .game-container { display: flex; flex-direction: column; align-items: center; gap: 7px; }
         
         #game-over-area {
             flex-direction: column; align-items: center;
@@ -81,10 +81,10 @@
         .board-area { display: flex; justify-content: center; }
 
         #game-board {
-            display: flex; flex-direction: column-reverse; gap: 8px;
+            display: flex; flex-direction: column-reverse; gap: 5px;
         }
 
-        .guess-row { display: flex; align-items: center; gap: 8px; padding: 4px; border-radius: 50px; transition: background-color var(--anim-fast), box-shadow var(--anim-fast); }
+        .guess-row { display: flex; align-items: center; gap: 6px; padding: 3px; border-radius: 50px; transition: background-color var(--anim-fast), box-shadow var(--anim-fast); }
         .guess-row.active { background-color: rgba(0,0,0,0.1); box-shadow: 0 0 15px rgba(52, 152, 219, 0.3); }
 
         .row-number-display {
@@ -137,12 +137,13 @@
         .marble.highlighted { transform: scale(1.05); box-shadow: 0 0 10px 3px var(--highlight-glow-color); }
 
         .palette-area { text-align: center; width: 100%; }
-        #color-palette { display: flex; flex-wrap: nowrap; justify-content: center; gap: 8px; margin-bottom: 15px; }
+        #color-palette { display: flex; flex-wrap: nowrap; justify-content: center; gap: 8px; margin-bottom: 7px; }
         .palette-color {
             width: 38px; height: 38px; border-radius: 50%; cursor: pointer;
             transition: transform var(--anim-fast), box-shadow var(--anim-fast);
             box-shadow: 0 2px 4px var(--shadow-color); flex-shrink: 0;
             position: relative; display: flex; justify-content: center; align-items: center;
+            user-select: none; -webkit-user-select: none;
         }
         .palette-color:hover { transform: scale(1.1); box-shadow: 0 4px 8px var(--shadow-color); }
         .palette-color:active { transform: scale(0.95); cursor: grabbing; }
@@ -186,6 +187,8 @@
         }
         .control-btn:hover:not(:disabled) { background: var(--accent-color); transform: translateY(-2px); }
         .control-btn svg { width: 26px; height: 26px; fill: currentColor; }
+        #game-controls .control-btn { width: 38px; height: 38px; }
+        #game-controls .control-btn svg { width: 20px; height: 20px; }
         
         .control-btn.active { background-color: var(--accent-color); box-shadow: 0 2px 4px var(--shadow-color), inset 0 0 5px rgba(0,0,0,0.2); }
         
@@ -378,6 +381,16 @@
                 right: 5px;
             }
         }
+        .palette-color.crossed-out::after {
+            content: "X";
+            position: absolute;
+            font-size: 28px;
+            font-weight: bold;
+            color: rgba(0, 0, 0, 0.6);
+            line-height: 1;
+            font-family: sans-serif;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
@@ -448,6 +461,9 @@
                     </button>
                  </div>
                  <div class="controls" id="game-controls" style="display: none;">
+                    <button id="delete-button" class="control-btn" disabled title="Törlés">
+                        <svg viewBox="0 0 24 24"><path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" /></svg>
+                    </button>
                     <button id="undo-button" class="control-btn" disabled title="Visszavonás (rövid nyomás), Új játék (hosszú nyomás)">
                         <svg viewBox="0 0 24 24"><path d="M12.5,8C9.85,8 7.45,9 5.6,10.6L2,7V16H11L7.38,12.38C8.77,11.22 10.54,10.5 12.5,10.5C16.04,10.5 19.05,12.81 20.1,16L22.47,15.22C21.08,11.03 17.15,8 12.5,8Z" /></svg>
                     </button>
@@ -597,7 +613,7 @@
 
     <!-- Multiplayer Menu -->
     <div id="multiplayer-menu-container" style="display: none;">
-        <h2 class="game-title" style="font-size: 2rem; margin-bottom: 10px;">Többjátékos Mód</h2>
+        <h2 class="game-title" style="font-size: 1.5rem; margin-bottom: -10px;">Multiplayer</h2>
         
         <div style="width: 100%; text-align: left;">
             <h3 style="margin-top: 0;">Lobby Létrehozása</h3>
@@ -813,6 +829,10 @@
 
             let secretCode = [], currentAttempt = 0, playerCurrentAttempt = 0, currentGuess = [], selectedHoleIndex = null;
             let actionHistory = [], isChecking = false, isGameOver = false;
+            let isPresetSelected = false;
+            let crossedOutColors = new Set();
+            let isLongPressTriggered = false;
+            let paletteHoldTimer = null;
             let effectsEnabled = true, effectInterval = null, highlightedColor = null;
             
             let currentMultiMode = 'switch';
@@ -836,6 +856,7 @@
             const gameBoard = document.getElementById('game-board');
             const colorPalette = document.getElementById('color-palette');
             const checkButton = document.getElementById('check-button');
+            const deleteButton = document.getElementById('delete-button');
             const undoButton = document.getElementById('undo-button');
             const newGameButton = document.getElementById('new-game-button');
             const themeToggleButton = document.getElementById('theme-toggle-btn');
@@ -1101,6 +1122,9 @@
                 isChecking = false; isGameOver = false; currentAttempt = 0; playerCurrentAttempt = 0; opponentAlreadyWon = false; isPlayerDead = false;
                 currentGuess = Array(CODE_LENGTH).fill(null);
                 selectedHoleIndex = null; actionHistory = [];
+                isPresetSelected = false;
+                crossedOutColors.clear();
+                document.querySelectorAll('.palette-color.crossed-out').forEach(el => el.classList.remove('crossed-out'));
                 clearColorHighlight();
                 gameOverArea.style.display = 'none'; 
                 const oldWinRow = document.querySelector('.win-row');
@@ -1270,7 +1294,49 @@
                 leaderboardModal.classList.add('visible');
             }
             
-            function handleUndo() { if (isChecking || isGameOver || actionHistory.length === 0) return; const lastAction = actionHistory.pop(); const activeRow = document.querySelector('.guess-row.active'); if (!activeRow) return; const holeEl = activeRow.querySelector(`.hole[data-hole-index='${lastAction.index}']`); const marbleEl = holeEl ? holeEl.querySelector('.marble') : null; if (marbleEl && currentGuess[lastAction.index] !== null) { marbleEl.classList.add('pop-out'); setTimeout(() => { currentGuess[lastAction.index] = lastAction.previousColor; updateGuessDisplay(); selectHole(lastAction.index); updateButtonStates(); }, 200); } else { currentGuess[lastAction.index] = lastAction.previousColor; updateGuessDisplay(); selectHole(lastAction.index); updateButtonStates(); } }
+            function handleUndo() { 
+                if (isChecking || isGameOver || actionHistory.length === 0) return; 
+                const lastAction = actionHistory.pop(); 
+                
+                if (lastAction.isPreset) {
+                    const holeEl = presetRow.querySelector(`.hole[data-hole-index='${lastAction.index}']`);
+                    const marbleEl = holeEl ? holeEl.querySelector('.marble') : null;
+                    if (marbleEl && presetGuess[lastAction.index] !== null) {
+                        marbleEl.classList.add('pop-out');
+                        setTimeout(() => {
+                            presetGuess[lastAction.index] = lastAction.previousColor;
+                            updatePresetDisplay();
+                            selectHole(lastAction.index, true);
+                            updateButtonStates();
+                        }, 200);
+                    } else {
+                        presetGuess[lastAction.index] = lastAction.previousColor;
+                        updatePresetDisplay();
+                        selectHole(lastAction.index, true);
+                        updateButtonStates();
+                    }
+                    return;
+                }
+                
+                const activeRow = document.querySelector('.guess-row.active'); 
+                if (!activeRow) return; 
+                const holeEl = activeRow.querySelector(`.hole[data-hole-index='${lastAction.index}']`); 
+                const marbleEl = holeEl ? holeEl.querySelector('.marble') : null; 
+                if (marbleEl && currentGuess[lastAction.index] !== null) { 
+                    marbleEl.classList.add('pop-out'); 
+                    setTimeout(() => { 
+                        currentGuess[lastAction.index] = lastAction.previousColor; 
+                        updateGuessDisplay(); 
+                        selectHole(lastAction.index, false); 
+                        updateButtonStates(); 
+                    }, 200); 
+                } else { 
+                    currentGuess[lastAction.index] = lastAction.previousColor; 
+                    updateGuessDisplay(); 
+                    selectHole(lastAction.index, false); 
+                    updateButtonStates(); 
+                } 
+            }
             
             async function handleCheck() {
                 clearColorHighlight();
@@ -1423,9 +1489,49 @@
                 colorPalette.innerHTML="";
                 COLOR_NAMES.forEach(((e,t)=>{
                     const o=document.createElement("div");
-                    o.className="palette-color",o.style.background=COLORS[e],o.dataset.color=e,o.draggable=!0;
+                    o.className="palette-color";
+                    o.style.background=COLORS[e];
+                    o.dataset.color=e;
+                    
+                    o.addEventListener('touchstart', (ev) => {
+                        isLongPressTriggered = false;
+                        paletteHoldTimer = setTimeout(() => {
+                            isLongPressTriggered = true;
+                            if (crossedOutColors.has(e)) { crossedOutColors.delete(e); o.classList.remove('crossed-out'); }
+                            else { crossedOutColors.add(e); o.classList.add('crossed-out'); }
+                        }, 500);
+                    }, {passive: true});
+                    o.addEventListener('touchend', (ev) => {
+                        if (paletteHoldTimer) clearTimeout(paletteHoldTimer);
+                        if (isLongPressTriggered && ev.cancelable) ev.preventDefault();
+                        setTimeout(() => isLongPressTriggered = false, 50);
+                    });
+                    o.addEventListener('touchmove', () => {
+                        if (paletteHoldTimer) clearTimeout(paletteHoldTimer);
+                    });
+                    
+                    o.addEventListener('mousedown', (ev) => {
+                        if (ev.button !== 0) return;
+                        isLongPressTriggered = false;
+                        paletteHoldTimer = setTimeout(() => {
+                            isLongPressTriggered = true;
+                            if (crossedOutColors.has(e)) { crossedOutColors.delete(e); o.classList.remove('crossed-out'); }
+                            else { crossedOutColors.add(e); o.classList.add('crossed-out'); }
+                        }, 500);
+                    });
+                    o.addEventListener('mouseup', (ev) => {
+                        if (paletteHoldTimer) clearTimeout(paletteHoldTimer);
+                        setTimeout(() => isLongPressTriggered = false, 50);
+                    });
+                    o.addEventListener('mouseleave', () => {
+                        if (paletteHoldTimer) clearTimeout(paletteHoldTimer);
+                    });
+                    
                     const n=document.createElement("span");
-                    n.className="palette-number",n.textContent=t+1,o.appendChild(n),colorPalette.appendChild(o)
+                    n.className="palette-number";
+                    n.textContent=t+1;
+                    o.appendChild(n);
+                    colorPalette.appendChild(o);
                 }))
             }
 
@@ -1481,6 +1587,7 @@
                     
                     checkButton.disabled = currentGuess.includes(null) || !isMyTurn;
                     undoButton.disabled = isGameOver ? false : (!isMyTurn || actionHistory.length === 0);
+                    if (deleteButton) deleteButton.disabled = !isMyTurn || selectedHoleIndex === null || currentGuess[selectedHoleIndex] === null;
                     newGameButton.disabled = false;
 
                     const colorPaletteEl = document.getElementById("color-palette");
@@ -1513,6 +1620,7 @@
                 
                 undoButton.disabled = isGameOver ? false : (!e || actionHistory.length === 0);
                 checkButton.disabled = !e || !t;
+                if (deleteButton) deleteButton.disabled = !e || selectedHoleIndex === null || currentGuess[selectedHoleIndex] === null;
                 newGameButton.disabled = isChecking;
                 
                 const activeRow = document.querySelector(".guess-row.active");
@@ -1549,10 +1657,51 @@
                 } 
             }
             function updateGuessDisplay(forceRowEl = null, forceGuess = null) { const rowEl = forceRowEl || getActiveHolesContainer(); if (!rowEl) return; const guessArr = forceGuess || currentGuess; const attr = forceRowEl ? 'data-hole-index' : getHoleDataAttr(); const holes = rowEl.querySelectorAll('.hole'); holes.forEach((hole, index) => { const existingMarble = hole.querySelector('.marble'); const newColor = guessArr[index]; if (!newColor && existingMarble) { hole.innerHTML = ''; } else if (newColor) { if (!existingMarble || existingMarble.dataset.color !== newColor) { hole.innerHTML = ''; const marble = document.createElement('div'); marble.className = 'marble marble-add-anim'; marble.style.background = COLORS[newColor]; marble.dataset.color = newColor; if (newColor === highlightedColor) { marble.classList.add('highlighted'); } hole.appendChild(marble); } } }); if (!forceRowEl && !forceGuess) syncLiveGuess(); }
-            function placeColor(e,t){const o=currentGuess[e];o!==t&&(actionHistory.push({index:e,previousColor:o}),currentGuess[e]=t,updateGuessDisplay(),updateButtonStates())}
-            function selectHole(e){isGameOver||(deselectAllHoles(),selectedHoleIndex=e,getActiveHolesContainer()?.querySelector(`.hole[${getHoleDataAttr()}='${e}']`)?.classList.add("selected-hole"),updateButtonStates())}
-            function deselectAllHoles(){document.querySelectorAll(".hole.selected-hole").forEach((e=>e.classList.remove("selected-hole"))),selectedHoleIndex=null}
-            function selectNextAvailableHole(){const e=currentGuess.indexOf(null);-1!==e?selectHole(e):(deselectAllHoles(),updateButtonStates())}
+            function placeColor(e,t){
+                if(isPresetSelected) {
+                    const o=presetGuess[e];
+                    if(o!==t){
+                        actionHistory.push({isPreset:true,index:e,previousColor:o});
+                        presetGuess[e]=t;
+                        updatePresetDisplay();
+                        updateButtonStates();
+                    }
+                } else {
+                    const o=currentGuess[e];
+                    if(o!==t){
+                        actionHistory.push({isPreset:false,index:e,previousColor:o});
+                        currentGuess[e]=t;
+                        updateGuessDisplay();
+                        updateButtonStates();
+                    }
+                }
+            }
+            function selectHole(e, isPreset = false){
+                if(isGameOver) return;
+                deselectAllHoles();
+                selectedHoleIndex=e;
+                isPresetSelected=isPreset;
+                const container = isPreset ? presetRow : getActiveHolesContainer();
+                if(container){
+                    const hole = container.querySelector(`.hole[data-hole-index='${e}']`);
+                    if(hole) hole.classList.add("selected-hole");
+                }
+                updateButtonStates();
+            }
+            function deselectAllHoles(){
+                document.querySelectorAll(".hole.selected-hole").forEach((e=>e.classList.remove("selected-hole")));
+                selectedHoleIndex=null;
+                isPresetSelected=false;
+            }
+            function selectNextAvailableHole(){
+                if(isPresetSelected) {
+                    const e=presetGuess.indexOf(null);
+                    -1!==e?selectHole(e, true):(deselectAllHoles(),updateButtonStates());
+                } else {
+                    const e=currentGuess.indexOf(null);
+                    -1!==e?selectHole(e, false):(deselectAllHoles(),updateButtonStates());
+                }
+            }
             
             function updateActiveRow() { 
                 let targetAttempt = currentAttempt;
@@ -1675,7 +1824,11 @@
             });
 
             colorPalette.addEventListener('contextmenu', handleColorHighlight);
-            colorPalette.addEventListener('click',e=>{if(isChecking||isGameOver)return;const t=e.target.closest(".palette-color");t&&null!==selectedHoleIndex&&(placeColor(selectedHoleIndex,t.dataset.color),selectNextAvailableHole())});
+            colorPalette.addEventListener('click',e=>{
+                if(isChecking||isGameOver||isLongPressTriggered)return;
+                const t=e.target.closest(".palette-color");
+                t&&null!==selectedHoleIndex&&(placeColor(selectedHoleIndex,t.dataset.color),selectNextAvailableHole())
+            });
             gameBoard.addEventListener('click',e=>{if(isChecking||isGameOver)return;const t=e.target.closest(".hole");t&&t.closest(".guess-row.active")&&selectHole(parseInt(t.dataset.holeIndex))});
             gameBoard.addEventListener('contextmenu', e => {
                 e.preventDefault();
@@ -1698,15 +1851,13 @@
                     }
                 }
             });
-            colorPalette.addEventListener('dragstart',e=>{const t=e.target.closest(".palette-color");t&&(e.dataTransfer.setData("text/plain",t.dataset.color),e.dataTransfer.effectAllowed="copy",document.body.classList.add("dragging"))});
-            colorPalette.addEventListener('dragend',()=>{document.body.classList.remove("dragging")});
-            gameBoard.addEventListener('dragover',e=>{const t=e.target.closest(".hole");t&&t.closest(".guess-row.active")&&(e.preventDefault(),document.querySelectorAll(".drag-over").forEach((e=>e.classList.remove("drag-over"))),t.classList.add("drag-over"))});
-            gameBoard.addEventListener('dragleave',e=>{const t=e.target.closest(".hole");t&&t.classList.remove("drag-over")});
-            gameBoard.addEventListener('drop',e=>{e.preventDefault(),document.querySelectorAll(".drag-over").forEach((e=>e.classList.remove("drag-over")));const t=e.target.closest(".hole");t&&t.closest(".guess-row.active")&&(placeColor(parseInt(t.dataset.holeIndex),e.dataTransfer.getData("text/plain")),selectNextAvailableHole())});
-
-            presetRow.addEventListener('drop', e => { e.preventDefault(); const holeEl = e.target.closest('.hole'); if (holeEl) { const color = e.dataTransfer.getData('text/plain'); const holeIndex = parseInt(holeEl.dataset.holeIndex); presetGuess[holeIndex] = color; updatePresetDisplay(); } });
-            presetRow.addEventListener('dragover', e => e.preventDefault());
-            presetRow.addEventListener('contextmenu', e => { e.preventDefault(); const holeEl = e.target.closest('.hole'); if (holeEl) { const holeIndex = parseInt(holeEl.dataset.holeIndex); presetGuess[holeIndex] = null; updatePresetDisplay(); } });
+            presetRow.addEventListener('click', e => {
+                if (isChecking || isGameOver) return;
+                const holeEl = e.target.closest('.hole');
+                if (holeEl) {
+                    selectHole(parseInt(holeEl.dataset.holeIndex), true);
+                }
+            });
 
             leaderboardBtn.addEventListener('click', () => {
                 settingsPanel.classList.remove('visible');
@@ -1772,6 +1923,12 @@
                 updatePresetAutofillUI();
             });
 
+            if (deleteButton) {
+                deleteButton.addEventListener('click', () => {
+                    if (isChecking || isGameOver || selectedHoleIndex === null) return;
+                    placeColor(selectedHoleIndex, null);
+                });
+            }
             checkButton.addEventListener('click', handleCheck);
             newGameButton.addEventListener('click', newGame);
             
@@ -1815,6 +1972,7 @@
             document.getElementById('menu-multiplayer-btn').addEventListener('click', () => {
                 mainMenuContainer.style.display = 'none';
                 multiplayerMenuContainer.style.display = 'flex';
+                document.getElementById('lobby-code-input').value = '';
             });
             
             const settingsModal = document.getElementById('settings-modal');
@@ -2196,6 +2354,9 @@
                 isChecking = false; isGameOver = false; currentAttempt = 0; playerCurrentAttempt = 0; opponentAlreadyWon = false;
                 currentGuess = Array(CODE_LENGTH).fill(null);
                 selectedHoleIndex = null; actionHistory = [];
+                isPresetSelected = false;
+                crossedOutColors.clear();
+                document.querySelectorAll('.palette-color.crossed-out').forEach(el => el.classList.remove('crossed-out'));
                 clearColorHighlight();
                 gameOverArea.style.display = 'none'; 
                 const oldWinRow = document.querySelector('.win-row');
@@ -2476,6 +2637,17 @@
             createPalette();
             createPresetRow();
             newGame();
+
+            window.addEventListener('beforeunload', (e) => {
+                const isPlayingLocal = gameMode === 'local' && currentAttempt > 0 && !isGameOver;
+                const isPlayingMulti = gameMode === 'multi' && lobbyId !== null;
+                
+                if (isPlayingLocal || isPlayingMulti) {
+                    e.preventDefault();
+                    e.returnValue = '';
+                    return '';
+                }
+            });
         });
     </script>
 </body>
