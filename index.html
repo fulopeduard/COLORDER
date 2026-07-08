@@ -84,7 +84,7 @@
             display: flex; flex-direction: column-reverse; gap: 5px;
         }
 
-        .guess-row { display: flex; align-items: center; gap: 6px; padding: 3px; border-radius: 50px; transition: background-color var(--anim-fast), box-shadow var(--anim-fast); }
+        .guess-row { display: flex; align-items: center; gap: 5px; padding: 2px; margin-bottom: 1px; border-radius: 50px; transition: background-color var(--anim-fast), box-shadow var(--anim-fast); }
         .guess-row.active { background-color: rgba(0,0,0,0.1); box-shadow: 0 0 15px rgba(52, 152, 219, 0.3); }
 
         .row-number-display {
@@ -498,6 +498,21 @@
         </div>
     </div>
 
+    <div id="friendly-fire-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 350px;">
+            <h2 style="margin-top:0;">Feladvány megadása</h2>
+            <p style="margin-bottom: 20px;">Készíts egy titkos kódot az ellenfelednek!</p>
+            <div id="friendly-fire-row" class="guess-row active" style="justify-content: center; margin-bottom: 20px; border: none; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 12px;">
+                <div class="guess-holes" id="friendly-fire-holes" style="margin:0;">
+                </div>
+            </div>
+            <div id="friendly-fire-palette" style="display: flex; gap: 8px; justify-content: center; margin-bottom: 25px; flex-wrap: wrap;">
+            </div>
+            <button id="friendly-fire-ready-btn" class="action-btn primary-btn" style="width: 100%;" disabled>Kész</button>
+            <div id="friendly-fire-waiting" style="display: none; margin-top: 15px; color: var(--accent-color); font-weight: bold;">Várakozás az ellenfélre...</div>
+        </div>
+    </div>
+
     <div id="time-change-modal" class="modal-overlay">
         <div class="modal-content">
             <button id="close-time-change-btn" class="close-btn" title="Bezárás">&times;</button>
@@ -627,6 +642,7 @@
                 <button class="toggle-btn" data-value="autoguess">Auto-Guess Racing</button>
                 <button class="toggle-btn" data-value="classic">Classic</button>
                 <button class="toggle-btn" data-value="coop">Co-op</button>
+                <button class="toggle-btn" data-value="friendly">Friendly fire</button>
             </div>
 
             <div id="player-count-settings" style="display: none;">
@@ -954,6 +970,86 @@
             const leaderboardModal = document.getElementById('leaderboard-modal');
             const closeLeaderboardBtn = document.getElementById('close-leaderboard-btn');
             
+            const friendlyFireModal = document.getElementById('friendly-fire-modal');
+            const friendlyFireHoles = document.getElementById('friendly-fire-holes');
+            const friendlyFirePalette = document.getElementById('friendly-fire-palette');
+            const friendlyFireReadyBtn = document.getElementById('friendly-fire-ready-btn');
+            const friendlyFireWaiting = document.getElementById('friendly-fire-waiting');
+            let friendlyFireGuess = Array(CODE_LENGTH).fill(null);
+            let friendlyFireSelectedHole = null;
+            let friendlyFireIsReady = false;
+
+            function initFriendlyFireUI() {
+                friendlyFireHoles.innerHTML = '';
+                friendlyFirePalette.innerHTML = '';
+                friendlyFireGuess = Array(CODE_LENGTH).fill(null);
+                friendlyFireSelectedHole = 0;
+                friendlyFireIsReady = false;
+                friendlyFireReadyBtn.disabled = true;
+                friendlyFireReadyBtn.style.display = 'block';
+                friendlyFireWaiting.style.display = 'none';
+
+                for (let i = 0; i < CODE_LENGTH; i++) {
+                    const hole = document.createElement('div');
+                    hole.className = 'hole';
+                    if (i === 0) hole.classList.add('selected-hole');
+                    hole.dataset.ffIndex = i;
+                    hole.addEventListener('click', () => {
+                        if (friendlyFireIsReady) return;
+                        friendlyFireHoles.querySelectorAll('.hole').forEach(h => h.classList.remove('selected-hole'));
+                        hole.classList.add('selected-hole');
+                        friendlyFireSelectedHole = i;
+                    });
+                    friendlyFireHoles.appendChild(hole);
+                }
+
+                COLOR_NAMES.forEach((c) => {
+                    const btn = document.createElement('div');
+                    btn.className = 'palette-color';
+                    btn.style.background = COLORS[c];
+                    btn.addEventListener('click', () => {
+                        if (friendlyFireIsReady || friendlyFireSelectedHole === null) return;
+                        friendlyFireGuess[friendlyFireSelectedHole] = c;
+                        updateFriendlyFireHoles();
+                        friendlyFireSelectedHole = friendlyFireGuess.indexOf(null);
+                        if (friendlyFireSelectedHole !== -1) {
+                            friendlyFireHoles.querySelectorAll('.hole').forEach(h => h.classList.remove('selected-hole'));
+                            friendlyFireHoles.children[friendlyFireSelectedHole].classList.add('selected-hole');
+                        } else {
+                            friendlyFireHoles.querySelectorAll('.hole').forEach(h => h.classList.remove('selected-hole'));
+                        }
+                        friendlyFireReadyBtn.disabled = friendlyFireGuess.includes(null);
+                    });
+                    friendlyFirePalette.appendChild(btn);
+                });
+            }
+
+            function updateFriendlyFireHoles() {
+                Array.from(friendlyFireHoles.children).forEach((hole, i) => {
+                    const color = friendlyFireGuess[i];
+                    if (color) {
+                        hole.innerHTML = `<div class="marble" style="background: ${COLORS[color]}"></div>`;
+                    } else {
+                        hole.innerHTML = '';
+                    }
+                });
+            }
+
+            friendlyFireReadyBtn.addEventListener('click', async () => {
+                if (friendlyFireGuess.includes(null)) return;
+                friendlyFireIsReady = true;
+                friendlyFireReadyBtn.style.display = 'none';
+                friendlyFireWaiting.style.display = 'block';
+                
+                const opponentPlayerNum = myPlayerIndex === 0 ? 2 : 1;
+                const myPlayerNum = myPlayerIndex + 1;
+                
+                await update(ref(db, `lobbies/${lobbyId}`), {
+                    [`friendlyCodeFor${opponentPlayerNum}`]: friendlyFireGuess,
+                    [`friendlyReady${myPlayerNum}`]: true
+                });
+            });
+            
             const infoBtn = document.getElementById('info-btn');
             const infoModal = document.getElementById('info-modal');
             const closeInfoBtn = document.getElementById('close-info-btn');
@@ -1031,14 +1127,14 @@
                     }
                     
                     const updates = {
-                        status: 'playing',
+                        status: currentMultiMode === 'friendly' ? 'choosing' : 'playing',
                         secretCode: newCode,
                         winner: null,
                         winnerIndex: null,
                         player1Attempts: 0,
                         player2Attempts: 0,
-                        player1Status: 'playing',
-                        player2Status: 'playing',
+                        player1Status: currentMultiMode === 'friendly' ? 'choosing' : 'playing',
+                        player2Status: currentMultiMode === 'friendly' ? 'choosing' : 'playing',
                         currentTurn: 1 - currentTurn,
                         systemGuesses: newSystemGuesses,
                         gameStartTime: Date.now(),
@@ -1048,6 +1144,13 @@
                         timerChangeRequest: null,
                         turnEndTime: turnTimerSeconds > 0 ? Date.now() + (turnTimerSeconds * 1000) : 0
                     };
+                    if (currentMultiMode === 'friendly') {
+                        updates.friendlyReady1 = false;
+                        updates.friendlyReady2 = false;
+                        updates.friendlyCodeFor1 = null;
+                        updates.friendlyCodeFor2 = null;
+                        friendlyFireIsReady = false;
+                    }
                     await update(ref(db, `lobbies/${lobbyId}`), updates);
                 } catch (e) {
                     console.error("Hiba a rematch során", e);
@@ -1220,7 +1323,7 @@
                     elapsedTime++;
                     timerEl.textContent = formatTime(elapsedTime);
                 } else if (gameMode === 'multi') {
-                    if (currentMultiMode === 'autoguess' || currentMultiMode === 'classic' || currentMultiMode === 'coop') {
+                    if (currentMultiMode === 'autoguess' || currentMultiMode === 'classic' || currentMultiMode === 'coop' || currentMultiMode === 'friendly') {
                         if (globalGameStartTime > 0) {
                             elapsedTime = Math.floor((Date.now() - globalGameStartTime) / 1000);
                         } else {
@@ -1343,7 +1446,7 @@
                 if (isChecking || isGameOver || currentGuess.includes(null)) return;
                 
                 if (gameMode === 'multi') {
-                    if (currentMultiMode === 'autoguess' || currentMultiMode === 'classic') {
+                    if (currentMultiMode === 'autoguess' || currentMultiMode === 'classic' || currentMultiMode === 'friendly') {
                         if (isPlayerDead) return;
                         isChecking = true;
                         updateButtonStates();
@@ -1581,8 +1684,8 @@
             }
 
             function updateButtonStates() {
-                if (gameMode === 'multi' && (currentMultiMode === 'autoguess' || currentMultiMode === 'classic')) {
-                    const attemptsCheck = currentMultiMode === 'classic' ? currentAttempt : playerCurrentAttempt;
+                if (gameMode === 'multi' && (currentMultiMode === 'autoguess' || currentMultiMode === 'classic' || currentMultiMode === 'friendly')) {
+                    const attemptsCheck = (currentMultiMode === 'classic' || currentMultiMode === 'friendly') ? currentAttempt : playerCurrentAttempt;
                     const isMyTurn = !isGameOver && !isPlayerDead && attemptsCheck < MAX_ATTEMPTS;
                     
                     checkButton.disabled = currentGuess.includes(null) || !isMyTurn;
@@ -2110,6 +2213,10 @@
                     switchGuessSettings.style.display = 'none';
                     autoguessSettings.style.display = 'block';
                     playerCountSettings.style.display = 'block';
+                } else if (val === 'friendly') {
+                    switchGuessSettings.style.display = 'none';
+                    autoguessSettings.style.display = 'none';
+                    playerCountSettings.style.display = 'none';
                 } else {
                     switchGuessSettings.style.display = 'none';
                     autoguessSettings.style.display = 'none';
@@ -2162,14 +2269,13 @@
                     gameControls.style.display = 'flex';
                     const code = Math.floor(10000 + Math.random() * 90000).toString();
                     newGame();
-                    const newSecretCode = Array.from({ length: CODE_LENGTH }, () => COLOR_NAMES[Math.floor(Math.random() * COLOR_NAMES.length)]);
-                    
                     lobbyId = code;
                     myPlayerIndex = 0;
                     gameMode = 'multi';
                     document.getElementById('timer-display').classList.add('clickable');
                     document.getElementById('display-lobby-code').textContent = code;
                     waitingRoomModal.classList.add('visible');
+                    const newSecretCode = Array.from({ length: CODE_LENGTH }, () => COLOR_NAMES[Math.floor(Math.random() * COLOR_NAMES.length)]);
                     
                     const selectedGameMode = getButtonGroupValue('game-mode-group');
                     let lobbyData = {
@@ -2185,11 +2291,22 @@
                         lobbyData.turnTimerSeconds = parseInt(getButtonGroupValue('turn-timer-group'));
                         lobbyData.currentTurn = Math.random() < 0.5 ? 0 : 1;
                         lobbyData.turnEndTime = 0;
+                    } else if (selectedGameMode === 'friendly') {
+                        lobbyData.maxPlayersInLobby = 2;
+                        lobbyData.playerCount = 1;
+                        lobbyData.player1Id = auth.currentUser.uid;
+                        lobbyData.player1Attempts = 0;
+                        lobbyData.player1Status = 'choosing';
+                        lobbyData.player1Guesses = [];
+                        lobbyData.friendlyReady1 = false;
+                        lobbyData.friendlyReady2 = false;
+                        lobbyData.friendlyCodeFor1 = null;
+                        lobbyData.friendlyCodeFor2 = null;
+                        lobbyData.maxPlayerAttempts = MAX_ATTEMPTS;
                     } else {
                         const totalPlayers = parseInt(getButtonGroupValue('player-count-group')) || 2;
                         lobbyData.maxPlayersInLobby = totalPlayers;
                         lobbyData.playerCount = 1;
-                        
                         lobbyData.player1Id = auth.currentUser.uid;
                         lobbyData.player1Attempts = 0;
                         lobbyData.player1Status = 'waiting';
@@ -2224,7 +2341,7 @@
                     const snapshot = await get(ref(db, `lobbies/${code}`));
                     if(snapshot.exists()) {
                         const data = snapshot.val();
-                        if(data.status === 'waiting') {
+                        if(data.status === 'waiting' || data.status === 'choosing') {
                             let joinedPlayerIndex = 1;
                             
                             if (data.gameModeType === 'switch') {
@@ -2236,7 +2353,7 @@
                                 });
                             } else {
                                 const joinResult = await runTransaction(ref(db, `lobbies/${code}`), (lobby) => {
-                                    if (lobby && lobby.status === 'waiting') {
+                                    if (lobby && (lobby.status === 'waiting' || lobby.status === 'choosing')) {
                                         let currentCount = lobby.playerCount || 1;
                                         if (currentCount < lobby.maxPlayersInLobby) {
                                             currentCount++;
@@ -2245,15 +2362,19 @@
                                             const playerNum = currentCount;
                                             lobby[`player${playerNum}Id`] = auth.currentUser.uid;
                                             lobby[`player${playerNum}Attempts`] = 0;
-                                            lobby[`player${playerNum}Status`] = 'waiting';
+                                            lobby[`player${playerNum}Status`] = lobby.gameModeType === 'friendly' ? 'choosing' : 'waiting';
                                             lobby[`player${playerNum}Guesses`] = [];
                                             
                                             if (currentCount === lobby.maxPlayersInLobby) {
-                                                lobby.status = 'playing';
-                                                for (let i = 1; i <= lobby.maxPlayersInLobby; i++) {
-                                                    lobby[`player${i}Status`] = 'playing';
+                                                if (lobby.gameModeType !== 'friendly') {
+                                                    lobby.status = 'playing';
+                                                    for (let i = 1; i <= lobby.maxPlayersInLobby; i++) {
+                                                        lobby[`player${i}Status`] = 'playing';
+                                                    }
+                                                    lobby.gameStartTime = Date.now();
+                                                } else {
+                                                    lobby.status = 'choosing';
                                                 }
-                                                lobby.gameStartTime = Date.now();
                                             }
                                         }
                                     }
@@ -2316,7 +2437,7 @@
                                 countEl.textContent = `Csatlakozott: ${data.playerCount || 1} / ${data.maxPlayersInLobby}`;
                             }
                         }
-                    } else if(data.status === 'playing' || data.status === 'finished' || data.status === 'abandoned') {
+                    } else if(data.status === 'choosing' || data.status === 'playing' || data.status === 'finished' || data.status === 'abandoned') {
                         waitingRoomModal.classList.remove('visible');
                         syncGameState(data);
                     }
@@ -2382,6 +2503,31 @@
             async function syncGameState(data) {
                 if (gameMode !== 'multi') return;
                 
+                if (data.status === 'choosing') {
+                    if (data.gameModeType === 'friendly') {
+                        if (!friendlyFireModal.classList.contains('visible') && !friendlyFireIsReady) {
+                            friendlyFireModal.classList.add('visible');
+                            initFriendlyFireUI();
+                        }
+                        
+                        // Check if both are ready
+                        if (data.friendlyReady1 && data.friendlyReady2) {
+                            friendlyFireWaiting.textContent = "Indulás...";
+                            if (myPlayerIndex === 0) {
+                                await update(ref(db, `lobbies/${lobbyId}`), {
+                                    status: 'playing',
+                                    gameStartTime: Date.now(),
+                                    player1Status: 'playing',
+                                    player2Status: 'playing'
+                                });
+                            }
+                        }
+                    }
+                    return;
+                }
+                
+                friendlyFireModal.classList.remove('visible');
+                
                 if (data.status === 'abandoned') {
                     opponentLeftModal.classList.add('visible');
                     return;
@@ -2428,9 +2574,14 @@
                     updateActiveRow();
                 }
 
-                secretCode = data.secretCode;
+                if (currentMultiMode === 'friendly') {
+                    const myPlayerNum = myPlayerIndex + 1;
+                    secretCode = data[`friendlyCodeFor${myPlayerNum}`] || [];
+                } else {
+                    secretCode = data.secretCode;
+                }
                 
-                if (currentMultiMode === 'autoguess' || currentMultiMode === 'classic') {
+                if (currentMultiMode === 'autoguess' || currentMultiMode === 'classic' || currentMultiMode === 'friendly') {
                     turnTimerSeconds = 0;
                     turnEndTime = 0;
                     
@@ -2447,7 +2598,7 @@
                     const myStatus = data[`player${playerNum}Status`] || 'playing';
                     
                     playerCurrentAttempt = (MAX_ATTEMPTS - maxPlayerAttempts) + myAttempts;
-                    if (currentMultiMode === 'classic') {
+                    if (currentMultiMode === 'classic' || currentMultiMode === 'friendly') {
                         currentAttempt = myAttempts;
                     }
                     updateActiveRow();
