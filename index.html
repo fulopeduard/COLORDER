@@ -2384,7 +2384,7 @@
                                 if (joinResult.committed && joinResult.snapshot.exists()) {
                                     const finalData = joinResult.snapshot.val();
                                     let found = false;
-                                    for (let i = 1; i <= finalData.maxPlayersInLobby; i++) {
+                                    for (let i = finalData.maxPlayersInLobby; i >= 1; i--) {
                                         if (finalData[`player${i}Id`] === auth.currentUser.uid) {
                                             joinedPlayerIndex = i - 1;
                                             found = true;
@@ -2534,7 +2534,13 @@
                 }
                 
                 let isNewGame = false;
-                if (secretCode && data.secretCode && secretCode.join(',') !== data.secretCode.join(',')) {
+                let targetSecretCode = data.secretCode;
+                if (data.gameModeType === 'friendly') {
+                    const myPlayerNum = myPlayerIndex + 1;
+                    targetSecretCode = data[`friendlyCodeFor${myPlayerNum}`] || [];
+                }
+                
+                if (secretCode && targetSecretCode && secretCode.join(',') !== targetSecretCode.join(',')) {
                     isNewGame = true;
                 }
                 
@@ -2607,7 +2613,7 @@
                     const myGuesses = data[`player${playerNum}Guesses`] || [];
                     const firstPlayerRowIdx = MAX_ATTEMPTS - maxPlayerAttempts;
                     const firstPlayerRowEl = document.querySelector(`.guess-row[data-row='${firstPlayerRowIdx}']`);
-                    const isFirstGuessRendered = firstPlayerRowEl && firstPlayerRowEl.querySelectorAll('.peg.feedback-black, .peg.feedback-white').length > 0;
+                    const isFirstGuessRendered = firstPlayerRowEl && firstPlayerRowEl.querySelectorAll('.marble').length > 0;
                     
                     if (myGuesses.length > 0 && !isFirstGuessRendered) {
                         const savedCurrentGuess = [...currentGuess];
