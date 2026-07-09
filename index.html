@@ -1276,7 +1276,7 @@
                         } else {
                             winRowIndex = -1;
                         }
-                    } else if (gameMode === 'multi' && currentMultiMode === 'switch') {
+                    } else if (gameMode === 'multi' && (currentMultiMode === 'switch' || currentMultiMode === 'classic' || currentMultiMode === 'friendly')) {
                         if (winnerIndex === myPlayerIndex) {
                             winRowIndex = currentAttempt - 1;
                         } else {
@@ -2505,6 +2505,11 @@
                 
                 if (data.status === 'choosing') {
                     if (data.gameModeType === 'friendly') {
+                        const myPlayerNum = myPlayerIndex + 1;
+                        if (data[`friendlyReady${myPlayerNum}`] === false) {
+                            friendlyFireIsReady = false;
+                        }
+                        
                         if (!friendlyFireModal.classList.contains('visible') && !friendlyFireIsReady) {
                             friendlyFireModal.classList.add('visible');
                             initFriendlyFireUI();
