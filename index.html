@@ -181,6 +181,7 @@
             justify-content: center;
             align-items: center;
             cursor: pointer;
+            flex-shrink: 0;
             box-shadow: 0 4px 8px var(--shadow-color);
             transition: all var(--anim-fast) ease-out;
             touch-action: manipulation;
@@ -418,9 +419,7 @@
                 <div id="game-board"></div>
                 
                 <div id="info-row" style="display: flex; justify-content: space-between; align-items: center; width: 100%; height: 26px; padding-top: 5px; margin-top: 5px; border-top: 2px dashed rgba(255,255,255,0.1); font-size: 0.95rem; color: var(--text-color);">
-                    <button id="settings-btn" style="background: none; border: none; padding: 0; display: flex; align-items: center; cursor: pointer; color: var(--text-color); transition: color 0.2s; font-family: inherit; font-size: inherit;" title="Menü">
-                        <span style="font-weight: 600; opacity: 0.8; text-transform: uppercase; letter-spacing: 1px;">Menü</span>
-                    </button>
+                    <div style="width: 24px; height: 24px;"></div>
                     <div id="info-player-count" style="display: none; align-items: center; color: var(--text-color);">
                         <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: var(--accent-color); margin-right: 4px;"><path d="M12,5.5A3.5,3.5 0 0,1 15.5,9A3.5,3.5 0 0,1 12,12.5A3.5,3.5 0 0,1 8.5,9A3.5,3.5 0 0,1 12,5.5M5,8C5.56,8 6.08,8.15 6.53,8.42C6.38,9.85 6.8,11.27 7.66,12.38C7.16,13.34 6.16,14 5,14A3,3 0 0,1 2,11A3,3 0 0,1 5,8M19,8A3,3 0 0,1 22,11A3,3 0 0,1 19,14C17.84,14 16.84,13.34 16.34,12.38C17.2,11.27 17.62,9.85 17.47,8.42C17.92,8.15 18.44,8 19,8M5.5,18.25C5.5,16.18 8.41,14.5 12,14.5C15.59,14.5 18.5,16.18 18.5,18.25V20H5.5V18.25M0,20V18.5C0,17.11 1.89,15.94 4.45,15.6C3.86,16.28 3.5,17.22 3.5,18.25V20H0M24,20H20.5V18.25C20.5,17.22 20.14,16.28 19.55,15.6C22.11,15.94 24,17.11 24,18.5V20Z" /></svg>
                         <span id="info-player-count-text" style="font-weight: bold; opacity: 0.8;">? / ?</span>
@@ -472,6 +471,9 @@
                     </button>
                     <button id="preset-toggle-btn" class="control-btn" title="Minta sor (rövid), Automatikus kitöltés (hosszú)">
                         <svg viewBox="0 0 24 24"><path d="M16,12V4H17V2H7V4H8V12L6,14V16H11.2V22H12.8V16H18V14L16,12Z" /></svg>
+                    </button>
+                    <button id="settings-btn" class="control-btn" title="Menü">
+                        <svg viewBox="0 0 24 24"><path d="M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z" /></svg>
                     </button>
                  </div>
             </div>
@@ -699,6 +701,7 @@
             <h3 style="margin-top: 0;">Csatlakozás Lobbyhoz</h3>
             <input type="text" inputmode="numeric" pattern="[0-9]*" id="lobby-code-input" placeholder="Kód (pl. 12345)" maxlength="5" style="padding: 10px; width: 100%; margin-bottom: 15px; text-transform: uppercase; text-align: center; font-size: 1.2rem; border-radius: 8px; background: var(--hole-color); color: var(--text-color); border: 1px solid var(--border-color); box-sizing: border-box;">
             <button id="join-lobby-btn" class="main-menu-btn">Csatlakozás</button>
+            <div id="join-error-msg" style="color: #e74c3c; font-weight: 600; margin-top: 10px; text-align: center; display: none; font-size: 1.1rem;"></div>
         </div>
         
         <button id="menu-back-from-multiplayer-btn" class="menu-back-btn">Vissza a főmenübe</button>
@@ -2333,10 +2336,43 @@
             });
 
             joinLobbyBtn.addEventListener('click', async () => {
+                const originalText = joinLobbyBtn.textContent;
+                joinLobbyBtn.disabled = true;
+                let timeLeft = 5;
+                joinLobbyBtn.textContent = `Várj... (${timeLeft}mp)`;
+                const interval = setInterval(() => {
+                    timeLeft--;
+                    if (timeLeft > 0) {
+                        joinLobbyBtn.textContent = `Várj... (${timeLeft}mp)`;
+                    } else {
+                        resetBtn();
+                    }
+                }, 1000);
+
+                function resetBtn() {
+                    clearInterval(interval);
+                    joinLobbyBtn.disabled = false;
+                    joinLobbyBtn.textContent = originalText;
+                }
+
+                function showError(msg) {
+                    const errorDiv = document.getElementById('join-error-msg');
+                    errorDiv.textContent = msg;
+                    errorDiv.style.display = 'block';
+                    resetBtn();
+                    setTimeout(() => { errorDiv.style.display = 'none'; }, 3000);
+                }
+
                 try {
-                    if (!auth.currentUser) throw new Error("Firebase Anonymous Auth nincs bekapcsolva vagy még tölt! Frissítsd az oldalt és várj egy kicsit.");
+                    if (!auth.currentUser) {
+                        showError("Firebase Anonymous Auth nincs bekapcsolva vagy még tölt! Frissítsd az oldalt és várj egy kicsit.");
+                        return;
+                    }
                     const code = lobbyCodeInput.value.toUpperCase().trim();
-                    if(code.length !== 5) { alert("A kód 5 karakteres kell legyen!"); return; }
+                    if(code.length !== 5) { 
+                        showError("A kód 5 karakteres kell legyen!"); 
+                        return; 
+                    }
                     
                     const snapshot = await get(ref(db, `lobbies/${code}`));
                     if(snapshot.exists()) {
@@ -2392,15 +2428,16 @@
                                         }
                                     }
                                     if (!found) {
-                                        alert("A szoba megtelt mialatt csatlakoztál!");
+                                        showError("A szoba megtelt mialatt csatlakoztál!");
                                         return;
                                     }
                                 } else {
-                                    alert("Hiba történt a csatlakozás során.");
+                                    showError("Hiba történt a csatlakozás során.");
                                     return;
                                 }
                             }
                             
+                            resetBtn();
                             multiplayerMenuContainer.style.display = 'none';
                             gameContainer.style.display = 'flex';
                             gameControls.style.display = 'flex';
@@ -2413,13 +2450,13 @@
                             waitingRoomModal.classList.add('visible');
                             listenToLobby();
                         } else {
-                            alert("A játék már elkezdődött ebben a szobában!");
+                            showError("A játék már elkezdődött ebben a szobában!");
                         }
                     } else {
-                        alert("Nem található ilyen kódú szoba!");
+                        showError("Nem található ilyen kódú szoba!");
                     }
                 } catch (error) {
-                    alert("Hiba a csatlakozáskor:\n" + error.message);
+                    showError("Hiba a csatlakozáskor:\n" + error.message);
                     console.error(error);
                 }
             });
