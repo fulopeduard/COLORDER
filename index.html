@@ -419,7 +419,12 @@
                 <div id="game-board"></div>
                 
                 <div id="info-row" style="display: flex; justify-content: space-between; align-items: center; width: 100%; height: 26px; padding-top: 5px; margin-top: 5px; border-top: 2px dashed rgba(255,255,255,0.1); font-size: 0.95rem; color: var(--text-color);">
-                    <div style="width: 24px; height: 24px;"></div>
+                    <div style="position: relative; display: flex; align-items: center;">
+                        <button id="chat-open-btn" style="background: none; border: none; padding: 0; display: none; align-items: center; cursor: pointer; color: var(--text-color); transition: color 0.2s;" title="Chat">
+                            <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: currentColor;"><path d="M12,3C17.5,3 22,6.58 22,11C22,15.42 17.5,19 12,19C10.76,19 9.57,18.82 8.47,18.5C5.55,21 2,21 2,21C4.33,18.67 4.85,16.42 4.9,15.19C3.1,14.07 2,12.63 2,11C2,6.58 6.5,3 12,3Z" /></svg>
+                        </button>
+                        <div id="chat-unread-badge" style="position: absolute; top: -5px; right: -5px; background: #e74c3c; color: white; font-size: 0.7rem; font-weight: bold; border-radius: 50%; width: 16px; height: 16px; display: none; align-items: center; justify-content: center; box-shadow: 0 0 4px rgba(0,0,0,0.5);">!</div>
+                    </div>
                     <div id="info-player-count" style="display: none; align-items: center; color: var(--text-color);">
                         <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: var(--accent-color); margin-right: 4px;"><path d="M12,5.5A3.5,3.5 0 0,1 15.5,9A3.5,3.5 0 0,1 12,12.5A3.5,3.5 0 0,1 8.5,9A3.5,3.5 0 0,1 12,5.5M5,8C5.56,8 6.08,8.15 6.53,8.42C6.38,9.85 6.8,11.27 7.66,12.38C7.16,13.34 6.16,14 5,14A3,3 0 0,1 2,11A3,3 0 0,1 5,8M19,8A3,3 0 0,1 22,11A3,3 0 0,1 19,14C17.84,14 16.84,13.34 16.34,12.38C17.2,11.27 17.62,9.85 17.47,8.42C17.92,8.15 18.44,8 19,8M5.5,18.25C5.5,16.18 8.41,14.5 12,14.5C15.59,14.5 18.5,16.18 18.5,18.25V20H5.5V18.25M0,20V18.5C0,17.11 1.89,15.94 4.45,15.6C3.86,16.28 3.5,17.22 3.5,18.25V20H0M24,20H20.5V18.25C20.5,17.22 20.14,16.28 19.55,15.6C22.11,15.94 24,17.11 24,18.5V20Z" /></svg>
                         <span id="info-player-count-text" style="font-weight: bold; opacity: 0.8;">? / ?</span>
@@ -794,6 +799,44 @@
         </div>
     </div>
 
+    <!-- CHAT MODAL -->
+    <div id="chat-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 400px; display: flex; flex-direction: column; height: 80vh; max-height: 600px; padding: 15px; border-radius: 12px; background-color: var(--board-color);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h3 style="margin: 0;">Chat</h3>
+                <button id="close-chat-btn" class="close-btn" title="Bezárás" style="position: static; font-size: 1.5rem;">&times;</button>
+            </div>
+            <div id="chat-messages" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; padding: 5px; border: 1px solid var(--border-color); border-radius: 8px; background: rgba(0,0,0,0.2);">
+                <!-- Messages will go here -->
+            </div>
+            <form id="chat-form" style="display: flex; gap: 5px; align-items: center; position: relative;">
+                <button type="button" id="chat-not-in-code-btn" title="Szín nincs a kódban" style="display: none; background: none; border: none; cursor: pointer; padding: 0 2px;">
+                    <div style="width: 24px; height: 24px; border-radius: 50%; background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red); position: relative; box-shadow: 0 0 5px rgba(0,0,0,0.5);">
+                        <span style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-weight: bold; font-size: 16px; text-shadow: 1px 1px 2px black;">X</span>
+                    </div>
+                </button>
+                <button type="button" id="chat-pos-guess-btn" title="Szín pozíció tipp" style="display: none; background: none; border: none; cursor: pointer; padding: 0 2px;">
+                    <div style="width: 24px; height: 24px; border-radius: 50%; background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red); position: relative; box-shadow: 0 0 5px rgba(0,0,0,0.5);">
+                        <span style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-weight: bold; font-size: 14px; text-shadow: 1px 1px 2px black;">#</span>
+                    </div>
+                </button>
+                <input type="text" id="chat-input" placeholder="Üzenet..." autocomplete="off" maxlength="150" style="flex: 1; padding: 10px; border-radius: 8px; background: var(--hole-color); color: var(--text-color); border: 1px solid var(--border-color); box-sizing: border-box; font-family: inherit; width: 100%;">
+                <button type="submit" class="main-menu-btn" style="width: auto; padding: 10px 15px; font-size: 0.9rem;">Küldés</button>
+                
+                <!-- Chat Action Picker Popup -->
+                <div id="chat-action-picker" style="display: none; position: absolute; bottom: 50px; left: 0; background: var(--board-color); padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 5px 15px rgba(0,0,0,0.5); z-index: 1000; flex-direction: column; gap: 10px;">
+                    <div id="chat-color-picker" style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; width: 220px;"></div>
+                    <div id="chat-number-picker" style="display: none; gap: 5px; justify-content: center;">
+                        <button type="button" class="toggle-btn" data-val="1">1</button>
+                        <button type="button" class="toggle-btn" data-val="2">2</button>
+                        <button type="button" class="toggle-btn" data-val="3">3</button>
+                        <button type="button" class="toggle-btn" data-val="4">4</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -816,6 +859,17 @@
 
         signInAnonymously(auth).then(() => { isFirebaseReady = true; }).catch((error) => { console.error("Firebase Auth Error:", error); });
         document.addEventListener('DOMContentLoaded', () => {
+            const FUNNY_NAMES = [
+                "Kódfejtő Kázmér", "Titkos Tihamér", "Színes Szilárd", "Golyós Gizi", "Mesteri Márton",
+                "Tippelő Tibor", "Lobby Lajos", "Pingvin Panni", "Zseniális Zsófi", "Rakéta Ricsi",
+                "Krumpli", "Sajt", "Béla bá", "Lajcsi", "Bukfenc", "Szerencsés Szabolcs",
+                "Gombos Gabi", "Kattintós Károly", "Vakond", "Maci Laci", "Gézengúz Géza",
+                "Pajkos Panna", "Brumi", "Füles", "Mókus", "Vaddisznó", "Sárkány", "Lézer Laci",
+                "Kobra", "Villám Vilmos", "Csiga Csaba", "Nyuszi Nyuszi", "Béka", "Tücsök",
+                "Szúnyog", "Láma", "Alpaka", "Teve", "Zebra", "Orrszarvú", "Víziló",
+                "Zsiráf", "Elefánt", "Oroszlán", "Tigris", "Párduc", "Krokodil", "Teknős",
+                "Kígyó", "Kaméleon"
+            ];
             const CODE_LENGTH = 4;
             let MAX_ATTEMPTS = 11;
             const COLORS = {
@@ -890,6 +944,23 @@
             const timerDisplayContainer = document.getElementById('timer-display');
             const timerEl = document.getElementById('timer');
             const leaderboardBtn = document.getElementById('leaderboard-btn');
+            
+            const chatOpenBtn = document.getElementById('chat-open-btn');
+            const chatModal = document.getElementById('chat-modal');
+            const closeChatBtn = document.getElementById('close-chat-btn');
+            const chatForm = document.getElementById('chat-form');
+            const chatInput = document.getElementById('chat-input');
+            const chatMessagesContainer = document.getElementById('chat-messages');
+            const chatUnreadBadge = document.getElementById('chat-unread-badge');
+            
+            const chatNotInCodeBtn = document.getElementById('chat-not-in-code-btn');
+            const chatPosGuessBtn = document.getElementById('chat-pos-guess-btn');
+            const chatActionPicker = document.getElementById('chat-action-picker');
+            const chatColorPicker = document.getElementById('chat-color-picker');
+            const chatNumberPicker = document.getElementById('chat-number-picker');
+            
+            let isChatOpen = false;
+            let lastSeenChatLength = 0;
             
             const timeChangeModal = document.getElementById('time-change-modal');
             const closeTimeChangeBtn = document.getElementById('close-time-change-btn');
@@ -2279,6 +2350,7 @@
                     document.getElementById('display-lobby-code').textContent = code;
                     waitingRoomModal.classList.add('visible');
                     const newSecretCode = Array.from({ length: CODE_LENGTH }, () => COLOR_NAMES[Math.floor(Math.random() * COLOR_NAMES.length)]);
+                    const randomName = FUNNY_NAMES[Math.floor(Math.random() * FUNNY_NAMES.length)];
                     
                     const selectedGameMode = getButtonGroupValue('game-mode-group');
                     let lobbyData = {
@@ -2287,8 +2359,11 @@
                         gameModeType: selectedGameMode,
                         guesses: [],
                         winner: null,
-                        hostId: auth.currentUser.uid
+                        hostId: auth.currentUser.uid,
+                        player1Name: randomName,
+                        chat: []
                     };
+                    window.myChatName = randomName;
 
                     if (selectedGameMode === 'switch') {
                         lobbyData.turnTimerSeconds = parseInt(getButtonGroupValue('turn-timer-group'));
@@ -2380,12 +2455,17 @@
                         if(data.status === 'waiting' || data.status === 'choosing') {
                             let joinedPlayerIndex = 1;
                             
+                            let availableNames = FUNNY_NAMES.filter(n => n !== data.player1Name && n !== data.player2Name && n !== data.player3Name && n !== data.player4Name);
+                            let randomName = availableNames[Math.floor(Math.random() * availableNames.length)];
+                            window.myChatName = randomName;
+                            
                             if (data.gameModeType === 'switch') {
                                 const newEndTime = data.turnTimerSeconds > 0 ? Date.now() + (data.turnTimerSeconds * 1000) : 0;
                                 await update(ref(db, `lobbies/${code}`), {
                                     status: 'playing',
                                     guestId: auth.currentUser.uid,
-                                    turnEndTime: newEndTime
+                                    turnEndTime: newEndTime,
+                                    player2Name: randomName
                                 });
                             } else {
                                 const joinResult = await runTransaction(ref(db, `lobbies/${code}`), (lobby) => {
@@ -2397,6 +2477,7 @@
                                             
                                             const playerNum = currentCount;
                                             lobby[`player${playerNum}Id`] = auth.currentUser.uid;
+                                            lobby[`player${playerNum}Name`] = randomName;
                                             lobby[`player${playerNum}Attempts`] = 0;
                                             lobby[`player${playerNum}Status`] = lobby.gameModeType === 'friendly' ? 'choosing' : 'waiting';
                                             lobby[`player${playerNum}Guesses`] = [];
@@ -2829,9 +2910,197 @@
                     }
                     updateButtonStates();
                 }
+                
+                // --- CHAT LOGIC ---
+                chatOpenBtn.style.display = 'flex';
+                if (data.gameModeType === 'coop') {
+                    chatNotInCodeBtn.style.display = 'block';
+                    chatPosGuessBtn.style.display = 'block';
+                } else {
+                    chatNotInCodeBtn.style.display = 'none';
+                    chatPosGuessBtn.style.display = 'none';
+                }
+                
+                if (data.chat) {
+                    const chatArray = Array.isArray(data.chat) ? data.chat : Object.values(data.chat);
+                    const currentChatLength = chatArray.length;
+                    if (currentChatLength > lastSeenChatLength) {
+                        if (!isChatOpen) {
+                            chatUnreadBadge.style.display = 'flex';
+                        }
+                        
+                        chatMessagesContainer.innerHTML = '';
+                        chatArray.forEach(msg => {
+                            const msgDiv = document.createElement('div');
+                            const isMine = msg.senderId === auth.currentUser.uid;
+                            msgDiv.style.alignSelf = isMine ? 'flex-end' : 'flex-start';
+                            msgDiv.style.backgroundColor = isMine ? 'var(--accent-color)' : '#445';
+                            msgDiv.style.color = 'white';
+                            msgDiv.style.padding = '8px 12px';
+                            msgDiv.style.borderRadius = '12px';
+                            msgDiv.style.maxWidth = '80%';
+                            msgDiv.style.wordBreak = 'break-word';
+                            msgDiv.style.lineHeight = '1.4';
+                            
+                            const headerDiv = document.createElement('div');
+                            headerDiv.style.fontSize = '0.75rem';
+                            headerDiv.style.opacity = '0.7';
+                            headerDiv.style.marginBottom = '2px';
+                            headerDiv.style.textAlign = isMine ? 'right' : 'left';
+                            
+                            const timeStr = new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                            headerDiv.textContent = `${msg.senderName} • ${timeStr}`;
+                            
+                            const textDiv = document.createElement('div');
+                            const textContent = msg.text;
+                            
+                            if (textContent.startsWith('[NOT_IN_CODE:') && textContent.endsWith(']')) {
+                                const color = textContent.slice(13, -1);
+                                textDiv.innerHTML = `
+                                    <div style="font-size: 0.8rem; margin-bottom: 4px; opacity: 0.9;">Szerintem nincs benne:</div>
+                                    <div style="width: 24px; height: 24px; border-radius: 50%; background: ${COLORS[color] || 'gray'}; position: relative; box-shadow: 0 0 5px rgba(0,0,0,0.5); display: inline-block;">
+                                        <span style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-weight: bold; font-size: 16px; text-shadow: 1px 1px 2px black;">X</span>
+                                    </div>
+                                `;
+                            } else if (textContent.startsWith('[POS_GUESS:') && textContent.endsWith(']')) {
+                                const parts = textContent.slice(11, -1).split(':');
+                                const color = parts[0];
+                                const num = parts[1];
+                                textDiv.innerHTML = `
+                                    <div style="font-size: 0.8rem; margin-bottom: 4px; opacity: 0.9;">Szerintem itt van:</div>
+                                    <div style="width: 24px; height: 24px; border-radius: 50%; background: ${COLORS[color] || 'gray'}; position: relative; box-shadow: 0 0 5px rgba(0,0,0,0.5); display: inline-block;">
+                                        <span style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-weight: bold; font-size: 14px; text-shadow: 1px 1px 2px black;">${num}</span>
+                                    </div>
+                                `;
+                            } else {
+                                textDiv.textContent = textContent;
+                            }
+                            
+                            msgDiv.appendChild(headerDiv);
+                            msgDiv.appendChild(textDiv);
+                            chatMessagesContainer.appendChild(msgDiv);
+                        });
+                        
+                        setTimeout(() => {
+                            chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+                        }, 50);
+                        
+                        lastSeenChatLength = currentChatLength;
+                    }
+                }
             }
 
+            // CHAT EVENT LISTENERS
+            chatOpenBtn.addEventListener('click', () => {
+                chatModal.classList.add('visible');
+                chatUnreadBadge.style.display = 'none';
+                isChatOpen = true;
+                setTimeout(() => chatInput.focus(), 100);
+                setTimeout(() => {
+                    chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+                }, 50);
+            });
 
+            closeChatBtn.addEventListener('click', () => {
+                chatModal.classList.remove('visible');
+                isChatOpen = false;
+            });
+
+            chatForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const text = chatInput.value.trim();
+                if (!text || !lobbyId) return;
+                
+                chatInput.value = '';
+                try {
+                    await runTransaction(ref(db, `lobbies/${lobbyId}/chat`), (currentChat) => {
+                        if (!currentChat) currentChat = [];
+                        currentChat.push({
+                            senderId: auth.currentUser.uid,
+                            senderName: window.myChatName || "Játékos",
+                            text: text,
+                            timestamp: Date.now()
+                        });
+                        return currentChat;
+                    });
+                } catch (err) {
+                    console.error("Chat küldési hiba:", err);
+                }
+            });
+            
+            async function sendChatSpecial(text) {
+                if (!lobbyId) return;
+                try {
+                    await runTransaction(ref(db, `lobbies/${lobbyId}/chat`), (currentChat) => {
+                        if (!currentChat) currentChat = [];
+                        currentChat.push({
+                            senderId: auth.currentUser.uid,
+                            senderName: window.myChatName || "Játékos",
+                            text: text,
+                            timestamp: Date.now()
+                        });
+                        return currentChat;
+                    });
+                } catch (err) {
+                    console.error("Chat küldési hiba:", err);
+                }
+            }
+
+            Object.keys(COLORS).forEach(color => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'control-btn';
+                btn.style.width = '30px';
+                btn.style.height = '30px';
+                btn.style.background = COLORS[color];
+                btn.style.border = '1px solid rgba(255,255,255,0.2)';
+                btn.dataset.color = color;
+                
+                btn.addEventListener('click', () => {
+                    if (chatActionPicker.dataset.mode === 'not_in_code') {
+                        sendChatSpecial(`[NOT_IN_CODE:${color}]`);
+                        chatActionPicker.style.display = 'none';
+                    } else if (chatActionPicker.dataset.mode === 'pos_guess') {
+                        chatActionPicker.dataset.selectedColor = color;
+                        chatColorPicker.style.display = 'none';
+                        chatNumberPicker.style.display = 'flex';
+                    }
+                });
+                chatColorPicker.appendChild(btn);
+            });
+
+            chatNumberPicker.querySelectorAll('.toggle-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const color = chatActionPicker.dataset.selectedColor;
+                    const num = btn.dataset.val;
+                    sendChatSpecial(`[POS_GUESS:${color}:${num}]`);
+                    chatActionPicker.style.display = 'none';
+                });
+            });
+
+            chatNotInCodeBtn.addEventListener('click', () => {
+                if (chatActionPicker.style.display === 'flex' && chatActionPicker.dataset.mode === 'not_in_code') {
+                    chatActionPicker.style.display = 'none';
+                } else {
+                    chatActionPicker.style.display = 'flex';
+                    chatActionPicker.dataset.mode = 'not_in_code';
+                    chatColorPicker.style.display = 'flex';
+                    chatNumberPicker.style.display = 'none';
+                }
+            });
+
+            chatPosGuessBtn.addEventListener('click', () => {
+                if (chatActionPicker.style.display === 'flex' && chatActionPicker.dataset.mode === 'pos_guess') {
+                    chatActionPicker.style.display = 'none';
+                } else {
+                    chatActionPicker.style.display = 'flex';
+                    chatActionPicker.dataset.mode = 'pos_guess';
+                    chatColorPicker.style.display = 'flex';
+                    chatNumberPicker.style.display = 'none';
+                }
+            });
+            
+            chatInput.addEventListener('focus', () => { chatActionPicker.style.display = 'none'; });
 
             createPalette();
             createPresetRow();
